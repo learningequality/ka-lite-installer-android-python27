@@ -27,13 +27,20 @@ import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 
+import android.util.Base64;
 import android.util.Log;
-
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -41,11 +48,22 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class ScriptActivity extends Activity {
 	ProgressDialog myProgressDialog; 
+	
+	// Path is depending on the ka_lite.zip file
+	private final String local_settings_path = "/kalite/local_settings.py";
+	
+	private SharedPreferences prefs;
+	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
+	private TextView ServerStatusTextView;
+	private WebView wv;
+	private Context context;
 	  
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -59,20 +77,135 @@ public class ScriptActivity extends Activity {
 		//  return;
 		//}
 	  
+		
+		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
+		Log.d(GlobalConstants.LOG_TAG, "Process " + android.os.Process.myPid() + "LaunchingActivity is checked elieli.");
+		
+		// set the lauching ui
+		setContentView(R.layout.activity_launching);
+		
+		// set the default file path
+		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
+		FileTextView.setText(Environment.getExternalStorageDirectory().getPath());
+		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
 		
     	if(installNeeded) {
-    	  setContentView(R.layout.install);	
+    	  //setContentView(R.layout.install);	
   		  new InstallAsyncTask().execute();
     	}
     	else {
-    	    runScriptService();
-    	    finish();
+    	    //finish();
     	}
 
 		//onStart();
   }
+	
+	@Override
+	protected void onStop() {
+	    super.onStop();
+//	    prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
+	}
+	
+	/**
+	 * When user click start 
+	 * @param view
+	 */
+	public void startServer(View view) {
+		runScriptService();
+	}
+	
+	/**
+	 * When user click file browser
+	 * @param view
+	 */
+	public void openDirPicker(View view) {
+		Intent intent = new Intent(this, DirectoryPicker.class); 
+		// optionally set options here 
+		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
+		intent.putExtra(DirectoryPicker.ONLY_DIRS,true);
+		startActivityForResult(intent, DirectoryPicker.PICK_DIRECTORY);
+	}
+	
+	/**
+	 * When the file pick is finished
+	 */
+	@Override 
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
+		if(requestCode == DirectoryPicker.PICK_DIRECTORY && resultCode == RESULT_OK) { 
+			Bundle extras = data.getExtras(); 
+			String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
+			generate_local_settings(path);
+			TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
+			FileTextView.setText(path);
+			// do stuff with path
+		}
+	}
+
+	/**
+	 * Overwrite the local_settings based on the file pick
+	 * @param path
+	 */
+	private void generate_local_settings(String path){
+		try {
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            keyGen.initialize(2048);
+            KeyPair RSA_key = keyGen.generateKeyPair();
+            Key priavte_key = RSA_key.getPrivate();
+            Key public_key = RSA_key.getPublic();
+            
+            byte[] publicKeyBytes = public_key.getEncoded();
+            byte[] privateKeyBytes = priavte_key.getEncoded();
+            
+            String content_root = null;
+            String content_data = null;
+            
+            String local_settings_destination = this.getFilesDir().getAbsolutePath() + local_settings_path;
+            String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
+            
+            content_root = "\nCONTENT_ROOT = \"" + path +"/content/\"";
+            content_data = "\nCONTENT_DATA_PATH = \"" + path +"/data/\"";
+            
+            
+            String gut ="CHANNEL = \"connectteaching\"" +
+            "\nLOAD_KHAN_RESOURCES = False" +
+            "\nLOCKDOWN = True" +   //jamie ask to add it, need to test
+            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
+            "\nPDFJS = False" +
+            database_path +
+            content_root +
+            content_data +
+            "\nDEBUG = True" +
+            "\nUSE_I18N = False" +
+            "\nUSE_L10N = False" +
+            "\nOWN_DEVICE_PUBLIC_KEY=" + "\"" + Base64.encodeToString(publicKeyBytes, 24, publicKeyBytes.length-24, Base64.DEFAULT).replace("\n", "\\n") + "\""
+            + "\nOWN_DEVICE_PRIVATE_KEY=" +  "\"" + "-----BEGIN RSA PRIVATE KEY-----" + "\\n"
+            + Base64.encodeToString(privateKeyBytes, 26, privateKeyBytes.length-26, Base64.DEFAULT).replace("\n", "\\n")
+            + "-----END RSA PRIVATE KEY-----" + "\"";
+            
+            File old_local_settings = new File(local_settings_destination);
+            if(old_local_settings.exists()){
+                old_local_settings.delete();
+            }
+            
+            File newFile = new File(local_settings_destination);
+            if(!newFile.exists())
+            {
+                newFile.createNewFile();
+                try
+               	{
+                    FileOutputStream fOut = new FileOutputStream(newFile);
+                    OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
+                    myOutWriter.append(gut);
+                    myOutWriter.close();
+                    fOut.close();
+                } catch(Exception e){}
+            }
+        } catch(Exception e) {
+            System.out.println("RSA generating error");
+        }
+    }
 
 	private void sendmsg(String key, String value) {
 	      Message message = installerHandler.obtainMessage();
@@ -148,8 +281,8 @@ public class ScriptActivity extends Activity {
 		    	sendmsg("installFailed", "");
 	    	}
 	    	
-		    runScriptService();
-		    finish();
+		    //runScriptService();
+		    //finish();
 		   }
 	   
 	  }
