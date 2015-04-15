@@ -2,7 +2,7 @@ package com.googlecode.android_scripting.facade;
 
 import android.util.Log;
 
-import com.android.python27.config.GlobalConstants;
+import com.android.kalite27.config.GlobalConstants;
 import com.googlecode.android_scripting.facade.FacadeManager;
 import com.googlecode.android_scripting.jsonrpc.RpcReceiver;
 import com.googlecode.android_scripting.rpc.Rpc;

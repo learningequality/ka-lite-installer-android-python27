@@ -1,0 +1,46 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="${relativePackage}.${activityClass}" >
+
+    <Button
+        android:id="@+id/buttonStart"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="Start"
+        android:onClick="startServer" />
+    
+    <Button
+        android:id="@+id/buttonFile"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/buttonStart"
+        android:layout_marginTop="20dp"
+        android:text="File Directory"
+        android:onClick="openDirPicker" />
+
+    <TextView
+        android:id="@+id/FileDirectory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/buttonFile"
+        android:layout_marginTop="20dp"
+        android:text="/storage"
+        android:ems="10" />
+    
+    <TextView
+        android:id="@+id/ServerStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/FileDirectory"
+        android:layout_marginTop="20dp"
+        android:text="server status: "
+        android:ems="10" />
+
+
+</RelativeLayout>
