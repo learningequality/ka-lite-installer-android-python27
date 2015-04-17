@@ -176,8 +176,13 @@ public class KaliteUtilities {
 	private void makeCopyOfSettings(String RSA, String content) {
 		try {
 			String externalStorage = Environment.getExternalStorageDirectory().getPath();
-			String RSA_path = externalStorage + "/kalite_essential/RSA_settings.py";
-			String content_path = externalStorage + "/kalite_essential/content_settings.py";
+			String setting_folder = externalStorage + "/kalite_essential";
+			File folder = new File(setting_folder);
+			if (!folder.isDirectory()) {
+				folder.mkdir();
+			}
+			String RSA_path = setting_folder + "/RSA_settings.py";
+			String content_path = setting_folder + "/content_settings.py";
 			File RSA_settings = new File(RSA_path);
 			// only write RSA at first time
 	        if (!RSA_settings.exists()){
