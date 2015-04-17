@@ -98,13 +98,14 @@ public class ScriptActivity extends Activity {
 		File path_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
 				"/kalite_essential/content_settings.py");
         if(path_settings.exists()){
-        	path = mUtilities.readCopyOfSettings(path_settings);
+        	this.path = mUtilities.readCopyOfSettings(path_settings);
+        	this.path = this.path.replaceAll("\n","");
         } else {
         	// if there is no setting saved, use the external storage
-        	path = Environment.getExternalStorageDirectory().getPath();
+        	this.path = Environment.getExternalStorageDirectory().getPath();
         }
 		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-		FileTextView.setText(path);
+		FileTextView.setText(this.path);
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
