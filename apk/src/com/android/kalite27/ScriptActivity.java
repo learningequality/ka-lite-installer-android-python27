@@ -26,9 +26,14 @@ import com.android.kalite27.config.GlobalConstants;
 import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.security.Key;
 import java.security.KeyPair;
@@ -37,8 +42,10 @@ import java.security.KeyPairGenerator;
 import android.util.Base64;
 import android.util.Log;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
@@ -64,6 +71,7 @@ public class ScriptActivity extends Activity {
 	private TextView ServerStatusTextView;
 	private WebView wv;
 	private Context context;
+	private String path;
 	  
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -84,22 +92,27 @@ public class ScriptActivity extends Activity {
 		// set the lauching ui
 		setContentView(R.layout.activity_launching);
 		
-		// set the default file path
+		// set the file path
+		// first check if the user has setting saved
+		File path_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
+				"/kalite_essential/content_settings.py");
+        if(path_settings.exists()){
+        	path = readCopyOfSettings(path_settings);
+        } else {
+        	// if there is no setting saved, use the external storage
+        	path = Environment.getExternalStorageDirectory().getPath();
+        }
 		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-		FileTextView.setText(Environment.getExternalStorageDirectory().getPath());
+		FileTextView.setText(path);
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
 		
+    	// first time running
     	if(installNeeded) {
-    	  //setContentView(R.layout.install);	
-  		  new InstallAsyncTask().execute();
+    		// this will also call generate_local_settings after unzip library
+  		  	new InstallAsyncTask().execute();
     	}
-    	else {
-    	    //finish();
-    	}
-
-		//onStart();
   }
 	
 	@Override
@@ -113,7 +126,9 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void startServer(View view) {
-		runScriptService();
+		if (check_directory(path)) {
+			runScriptService();
+		}
 	}
 	
 	/**
@@ -122,7 +137,7 @@ public class ScriptActivity extends Activity {
 	 */
 	public void openDirPicker(View view) {
 		Intent intent = new Intent(this, DirectoryPicker.class); 
-		// optionally set options here 
+		// set options here 
 		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
 		intent.putExtra(DirectoryPicker.ONLY_DIRS,true);
 		startActivityForResult(intent, DirectoryPicker.PICK_DIRECTORY);
@@ -136,38 +151,77 @@ public class ScriptActivity extends Activity {
 		if(requestCode == DirectoryPicker.PICK_DIRECTORY && resultCode == RESULT_OK) { 
 			Bundle extras = data.getExtras(); 
 			String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
-			generate_local_settings(path);
-			TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-			FileTextView.setText(path);
 			// do stuff with path
+            if(check_directory(path)){
+            	// if the path is changed
+            	if (this.path != path) {
+            		this.path = path;
+	            	// set the local settings
+					generate_local_settings();
+					TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
+					FileTextView.setText(path);
+            	} else {
+            		// TODO: the path is not changed
+            	}
+            }
 		}
 	}
 
 	/**
+	 * Check if the path contains a data and a content folder
+	 * @param path
+	 * @return
+	 */
+	private boolean check_directory(String path){
+		File data_file = new File(path + "/data");
+		File content_file = new File(path + "/content");
+		// if the directory doesn't contain data or content folder, alert
+        if(!data_file.exists() || !content_file.exists()){
+        	new AlertDialog.Builder(this)
+                .setTitle("Invalid Directory")
+                .setMessage("The selected directory doesn't contain the data or content folder")
+                .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) { 
+                    }
+                 })
+                .show();
+        	return false;
+        }
+        else {
+        	return true;
+        }
+	}
+	
+	/**
 	 * Overwrite the local_settings based on the file pick
 	 * @param path
 	 */
-	private void generate_local_settings(String path){
+	private void generate_local_settings(){
 		try {
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            KeyPair RSA_key = keyGen.generateKeyPair();
-            Key priavte_key = RSA_key.getPrivate();
-            Key public_key = RSA_key.getPublic();
-            
-            byte[] publicKeyBytes = public_key.getEncoded();
-            byte[] privateKeyBytes = priavte_key.getEncoded();
-            
+			// First check if there is RSA saved
+			String RSA = "";
+			File RSA_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/RSA_settings.py");
+	        if(RSA_settings.exists()){
+	        	RSA = readCopyOfSettings(RSA_settings);
+	        } else {
+	        	// if there is no RSA saved, generate new RSA
+	        	RSA = generateRSA();
+	        }
+	        if (RSA.length() < 100) {
+	        	RSA = generateRSA();
+	        }
+			
             String content_root = null;
             String content_data = null;
             
+            // the location of local_settings.py
             String local_settings_destination = this.getFilesDir().getAbsolutePath() + local_settings_path;
             String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
             
             content_root = "\nCONTENT_ROOT = \"" + path +"/content/\"";
             content_data = "\nCONTENT_DATA_PATH = \"" + path +"/data/\"";
             
-            
+            // setting info
             String gut ="CHANNEL = \"connectteaching\"" +
             "\nLOAD_KHAN_RESOURCES = False" +
             "\nLOCKDOWN = True" +   //jamie ask to add it, need to test
@@ -179,16 +233,14 @@ public class ScriptActivity extends Activity {
             "\nDEBUG = True" +
             "\nUSE_I18N = False" +
             "\nUSE_L10N = False" +
-            "\nOWN_DEVICE_PUBLIC_KEY=" + "\"" + Base64.encodeToString(publicKeyBytes, 24, publicKeyBytes.length-24, Base64.DEFAULT).replace("\n", "\\n") + "\""
-            + "\nOWN_DEVICE_PRIVATE_KEY=" +  "\"" + "-----BEGIN RSA PRIVATE KEY-----" + "\\n"
-            + Base64.encodeToString(privateKeyBytes, 26, privateKeyBytes.length-26, Base64.DEFAULT).replace("\n", "\\n")
-            + "-----END RSA PRIVATE KEY-----" + "\"";
+            "\n" + RSA;
             
+            // delete the old settings
             File old_local_settings = new File(local_settings_destination);
             if(old_local_settings.exists()){
                 old_local_settings.delete();
             }
-            
+            // overwrite with new settings
             File newFile = new File(local_settings_destination);
             if(!newFile.exists())
             {
@@ -200,13 +252,112 @@ public class ScriptActivity extends Activity {
                     myOutWriter.append(gut);
                     myOutWriter.close();
                     fOut.close();
-                } catch(Exception e){}
+                    makeCopyOfSettings(RSA,path);
+                } catch(Exception e){
+                	System.out.println("Failed to write file");
+                }
             }
         } catch(Exception e) {
-            System.out.println("RSA generating error");
+            System.out.println("Failed to write file");
         }
     }
 
+	/**
+	 * Generate RSA key pairs
+	 * @return
+	 */
+	private String generateRSA() {
+		String key = "";
+		try {
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            keyGen.initialize(2048);
+            KeyPair RSA_key = keyGen.generateKeyPair();
+            Key priavte_key = RSA_key.getPrivate();
+            Key public_key = RSA_key.getPublic();
+            
+            byte[] publicKeyBytes = public_key.getEncoded();
+            byte[] privateKeyBytes = priavte_key.getEncoded();
+            
+            key = "OWN_DEVICE_PUBLIC_KEY=" + "\"" + Base64.encodeToString(publicKeyBytes, 24, publicKeyBytes.length-24, Base64.DEFAULT).replace("\n", "\\n") + "\""
+            + "\nOWN_DEVICE_PRIVATE_KEY=" +  "\"" + "-----BEGIN RSA PRIVATE KEY-----" + "\\n"
+            + Base64.encodeToString(privateKeyBytes, 26, privateKeyBytes.length-26, Base64.DEFAULT).replace("\n", "\\n")
+            + "-----END RSA PRIVATE KEY-----" + "\"";
+		} catch(Exception e) {
+            System.out.println("RSA generating error");
+        }
+		return key;
+	}
+	
+	/**
+	 * Read setting from local file
+	 * @param file
+	 * @return
+	 */
+	private String readCopyOfSettings(File file) {
+		String settings = "";
+		try {
+			FileReader fileReader = new FileReader(file);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			StringBuffer stringBuffer = new StringBuffer();
+			String line;
+			while ((line = bufferedReader.readLine()) != null) {
+				stringBuffer.append(line);
+				stringBuffer.append("\n");
+			}
+			fileReader.close();
+			settings = stringBuffer.toString();
+		} catch (IOException e) {
+			System.out.println("Failed to read file");
+		}
+		return settings;
+	}
+	
+	/**
+	 * Make a local copy of the setting of RSA and path
+	 * @param RSA
+	 * @param content
+	 */
+	private void makeCopyOfSettings(String RSA, String content) {
+		try {
+			String externalStorage = Environment.getExternalStorageDirectory().getPath();
+			String RSA_path = externalStorage + "/kalite_essential/RSA_settings.py";
+			String content_path = externalStorage + "/kalite_essential/content_settings.py";
+			File RSA_settings = new File(RSA_path);
+			// only write RSA at first time
+	        if (!RSA_settings.exists()){
+	        	RSA_settings.createNewFile();
+	            try
+	           	{
+	                FileOutputStream fOut = new FileOutputStream(RSA_settings);
+	                OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
+	                myOutWriter.append(RSA);
+	                myOutWriter.close();
+	                fOut.close();
+	            } catch(Exception e){
+	            	System.out.println("Failed to write file");
+	            }
+	        }
+	        File content_settings = new File(content_path);
+	        // overwrite path
+	        if (content_settings.exists()){
+	        	content_settings.delete();
+	        } 
+	        content_settings.createNewFile();
+	        try
+	        {
+	        	FileOutputStream fOut = new FileOutputStream(content_settings);
+	        	OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
+	        	myOutWriter.append(content);
+	        	myOutWriter.close();
+	        	fOut.close();
+	        } catch(Exception e){
+	        	System.out.println("Failed to write file");
+	        }
+		} catch(Exception e) {
+			System.out.println("Failed to create a local copy");
+		}
+	}
+	
 	private void sendmsg(String key, String value) {
 	      Message message = installerHandler.obtainMessage();
 	      Bundle bundle = new Bundle();
@@ -280,7 +431,7 @@ public class ScriptActivity extends Activity {
 	    	else {
 		    	sendmsg("installFailed", "");
 	    	}
-	    	
+  		  	generate_local_settings();
 		    //runScriptService();
 		    //finish();
 		   }
