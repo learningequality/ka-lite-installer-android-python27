@@ -26,14 +26,28 @@ import com.android.kalite27.config.GlobalConstants;
 import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 
+import android.util.Base64;
 import android.util.Log;
-
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -41,11 +55,24 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class ScriptActivity extends Activity {
 	ProgressDialog myProgressDialog; 
+	
+	// Path is depending on the ka_lite.zip file
+	private final String local_settings_path = "/kalite/local_settings.py";
+	
+	private SharedPreferences prefs;
+	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
+	private TextView ServerStatusTextView;
+	private WebView wv;
+	private Context context;
+	private String path;
+	private KaliteUtilities mUtilities;
 	  
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -58,22 +85,114 @@ public class ScriptActivity extends Activity {
 		//  toast.show();
 		//  return;
 		//}
-	  
+	  	mUtilities = new KaliteUtilities();
+		
+		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
+		Log.d(GlobalConstants.LOG_TAG, "Process " + android.os.Process.myPid() + "LaunchingActivity is checked elieli.");
+		
+		// set the lauching ui
+		setContentView(R.layout.activity_launching);
+		
+		// set the file path
+		// first check if the user has setting saved
+		File path_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
+				"/kalite_essential/content_settings.py");
+        if(path_settings.exists()){
+        	path = mUtilities.readCopyOfSettings(path_settings);
+        } else {
+        	// if there is no setting saved, use the external storage
+        	path = Environment.getExternalStorageDirectory().getPath();
+        }
+		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
+		FileTextView.setText(path);
+		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
 		
+    	// first time running
     	if(installNeeded) {
-    	  setContentView(R.layout.install);	
-  		  new InstallAsyncTask().execute();
+    		// this will also call generate_local_settings after unzip library
+  		  	new InstallAsyncTask().execute();
     	}
-    	else {
-    	    runScriptService();
-    	    finish();
-    	}
-
-		//onStart();
   }
+	
+	@Override
+	protected void onStop() {
+	    super.onStop();
+//	    prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
+	}
+	
+	/**
+	 * When user click start 
+	 * @param view
+	 */
+	public void startServer(View view) {
+		if (check_directory(path)) {
+			runScriptService();
+		}
+	}
+	
+	/**
+	 * When user click file browser
+	 * @param view
+	 */
+	public void openDirPicker(View view) {
+		Intent intent = new Intent(this, DirectoryPicker.class); 
+		// set options here 
+		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
+		intent.putExtra(DirectoryPicker.ONLY_DIRS,true);
+		startActivityForResult(intent, DirectoryPicker.PICK_DIRECTORY);
+	}
+	
+	/**
+	 * When the file pick is finished
+	 */
+	@Override 
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
+		if(requestCode == DirectoryPicker.PICK_DIRECTORY && resultCode == RESULT_OK) { 
+			Bundle extras = data.getExtras(); 
+			String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
+			// do stuff with path
+            if(check_directory(path)){
+            	// if the path is changed
+            	if (this.path != path) {
+            		this.path = path;
+	            	// set the local settings
+					mUtilities.generate_local_settings(path, this);
+					TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
+					FileTextView.setText(path);
+            	} else {
+            		// TODO: the path is not changed
+            	}
+            }
+		}
+	}
 
+	/**
+	 * Check if the path contains a data and a content folder
+	 * @param path
+	 * @return
+	 */
+	private boolean check_directory(String path){
+		File data_file = new File(path + "/data");
+		File content_file = new File(path + "/content");
+		// if the directory doesn't contain data or content folder, alert
+        if(!data_file.exists() || !content_file.exists()){
+        	new AlertDialog.Builder(this)
+                .setTitle("Invalid Directory")
+                .setMessage("The selected directory doesn't contain the data or content folder")
+                .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) { 
+                    }
+                 })
+                .show();
+        	return false;
+        }
+        else {
+        	return true;
+        }
+	}
+	
 	private void sendmsg(String key, String value) {
 	      Message message = installerHandler.obtainMessage();
 	      Bundle bundle = new Bundle();
@@ -147,9 +266,9 @@ public class ScriptActivity extends Activity {
 	    	else {
 		    	sendmsg("installFailed", "");
 	    	}
-	    	
-		    runScriptService();
-		    finish();
+  		  	mUtilities.generate_local_settings(path, this);
+		    //runScriptService();
+		    //finish();
 		   }
 	   
 	  }
