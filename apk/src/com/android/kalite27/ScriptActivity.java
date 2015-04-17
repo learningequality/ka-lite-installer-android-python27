@@ -180,7 +180,7 @@ public class ScriptActivity extends Activity {
         if(!data_file.exists() || !content_file.exists()){
         	new AlertDialog.Builder(this)
                 .setTitle("Invalid Directory")
-                .setMessage("The selected directory doesn't contain the data or content folder "+path+ "/data")
+                .setMessage("The selected directory doesn't contain the data or content folder")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
                     }
