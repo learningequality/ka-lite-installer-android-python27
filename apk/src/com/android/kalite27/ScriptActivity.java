@@ -97,13 +97,14 @@ public class ScriptActivity extends Activity {
 		File path_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
 				"/kalite_essential/content_settings.py");
         if(path_settings.exists()){
-        	path = readCopyOfSettings(path_settings);
+        	this.path = readCopyOfSettings(path_settings);
+        	this.path = this.path.replaceAll("\n","");
         } else {
         	// if there is no setting saved, use the external storage
-        	path = Environment.getExternalStorageDirectory().getPath();
+        	this.path = Environment.getExternalStorageDirectory().getPath();
         }
 		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-		FileTextView.setText(path);
+		FileTextView.setText(this.path);
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
@@ -179,7 +180,7 @@ public class ScriptActivity extends Activity {
         if(!data_file.exists() || !content_file.exists()){
         	new AlertDialog.Builder(this)
                 .setTitle("Invalid Directory")
-                .setMessage("The selected directory doesn't contain the data or content folder")
+                .setMessage("The selected directory doesn't contain the data or content folder "+path+ "/data")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
                     }
@@ -320,8 +321,13 @@ public class ScriptActivity extends Activity {
 	private void makeCopyOfSettings(String RSA, String content) {
 		try {
 			String externalStorage = Environment.getExternalStorageDirectory().getPath();
-			String RSA_path = externalStorage + "/kalite_essential/RSA_settings.py";
-			String content_path = externalStorage + "/kalite_essential/content_settings.py";
+			String setting_folder = externalStorage + "/kalite_essential";
+			File folder = new File(setting_folder);
+			if (!folder.isDirectory()) {
+				folder.mkdir();
+			}
+			String RSA_path = setting_folder + "/RSA_settings.py";
+			String content_path = setting_folder + "/content_settings.py";
 			File RSA_settings = new File(RSA_path);
 			// only write RSA at first time
 	        if (!RSA_settings.exists()){
