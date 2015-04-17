@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">kalite27</string>
     <string name="loading">kalite27 running...</string>
+    <string name="cancel">Cancel</string>
 </resources>
