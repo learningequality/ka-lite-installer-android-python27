@@ -144,6 +144,8 @@ public class DirectoryPicker extends ListActivity {
 		int i = 0;
 		for(File file: files) {
 			names[i] = file.getName();
+			if (file.isDirectory())
+				names[i] += '/';
 			i++;
 		}
 		return names;
