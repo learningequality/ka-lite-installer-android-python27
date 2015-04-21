@@ -50,6 +50,7 @@ public class BackgroundScriptService extends Service {
 	
 	private static BackgroundScriptService instance;
 	private boolean killMe;
+	private boolean swipekill;
 	  
 	private InterpreterConfiguration mInterpreterConfiguration = null;
 	private RpcReceiverManager mFacadeManager;
@@ -59,6 +60,13 @@ public class BackgroundScriptService extends Service {
     static {
       instance = null;
     }
+
+    // ------------------------------------------------------------------------------------------------------
+	@Override
+	public void onTaskRemoved(Intent rootIntent) {
+		Log.d(GlobalConstants.LOG_TAG, "onTaskRemoved elieli is called.");
+		swipekill = true;
+	}
     
     // ------------------------------------------------------------------------------------------------------
 
@@ -101,6 +109,7 @@ public class BackgroundScriptService extends Service {
 		super.onCreate();
 		BackgroundScriptService.context = getApplicationContext();
 		mBinder = new LocalBinder();
+		swipekill = false;
 	}
 
     // ------------------------------------------------------------------------------------------------------
@@ -118,53 +127,74 @@ public class BackgroundScriptService extends Service {
 	@Override
 	public void onStart(Intent intent, final int startId) {
 		super.onStart(intent, startId);
-		
-		killProcess();
-		
-		instance = this;
-	    this.killMe = false;
+	}
 
-		new startMyAsyncTask().execute(startId);
+	// ------------------------------------------------------------------------------------------------------
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId){
+		super.onStartCommand(intent, flags, startId);
+		killProcess();
+		instance = this;
+		this.killMe = false;
+		if(!swipekill){
+			if (intent != null && intent.getExtras() != null) {
+				String kalite_command = intent.getExtras().getString("kalite_command");
+				new startMyAsyncTask(kalite_command).execute(startId);
+			}
+			return START_STICKY;
+		}else{
+			new startMyAsyncTask("stop").execute(startId);
+			return START_CONTINUATION_MASK;
+		}
 	}
 
     // ------------------------------------------------------------------------------------------------------
 
-	  public class startMyAsyncTask extends AsyncTask<Integer, Integer, Boolean> {
-		   @Override
-		   protected void onPreExecute() {
-		   }
-	
-		   @Override
-		   protected Boolean doInBackground(Integer... params) {	    
-			   startMyMain(params[0]);
-			   
-			   // TODO
-			   return true;
-		   }
-	
-		   @Override
-		   protected void onProgressUpdate(Integer... values) {
-		   }
-	
-		   @Override
-		   protected void onPostExecute(Boolean installStatus) {
-		   }
-	   
-	  }
+	public class startMyAsyncTask extends AsyncTask<Integer, Integer, Boolean> {
+		private String kalite_command;
+
+		public startMyAsyncTask(String s) {
+			super();
+			kalite_command = s;
+		}
+
+		@Override
+		protected void onPreExecute() {
+		}
+
+		@Override
+		protected Boolean doInBackground(Integer... params) {
+			startMyMain(params[0], kalite_command);
+			return true;
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... values) {
+		}
+
+		@Override
+		protected void onPostExecute(Boolean installStatus) {
+		}	   
+	}
 
 	// ------------------------------------------------------------------------------------------------------
 
-	private void startMyMain(final int startId) {
+	private void startMyMain(final int startId, String kalite_command) {
 
 		String scriptName = GlobalConstants.PYTHON_MAIN_SCRIPT_NAME;
 		scriptName = this.getFilesDir().getAbsolutePath() + "/" + scriptName;
 		File script = new File(scriptName);
-		
+		final boolean selfTerminated;
+		if(kalite_command.equals("stop")){
+			selfTerminated = true;
+		}else{
+			selfTerminated = false;
+		}
 		// arguments
 		ArrayList<String> args = new ArrayList<String>();
 		args.add(scriptName);
-		args.add("start");
-		args.add("--foreground");
+		args.add(kalite_command);
+		// args.add("--foreground");
 
 		File pythonBinary = new File(this.getFilesDir().getAbsolutePath() + "/python/bin/python");
 
@@ -184,17 +214,16 @@ public class BackgroundScriptService extends Service {
 		myScriptProcess = MyScriptProcess.launchScript(script, mInterpreterConfiguration, mProxy, new Runnable() {
 					@Override
 					public void run() {
-						Log.d(GlobalConstants.LOG_TAG, "Process " + android.os.Process.myPid() + " is killed elieli.");
-						mProxy.shutdown();
-						stopSelf(startId);
-						killProcess();
-						android.os.Process.killProcess(android.os.Process.myPid());
-						
+						Log.d(GlobalConstants.LOG_TAG, "Process "+android.os.Process.myPid()+" BackgroundScriptService elieli.");
+						if(selfTerminated){
+							mProxy.shutdown();
+							stopSelf(startId);
+							killProcess();
+						}
 						// hard force restart
 //				        if (!ScriptService.this.killMe) {
 //				        	startMyMain();				        	
 //				        }
-
 					}
 				}, script.getParent(),  Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + this.getPackageName(), args, environmentVariables, pythonBinary);		
 	}

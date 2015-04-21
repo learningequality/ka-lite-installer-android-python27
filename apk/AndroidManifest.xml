@@ -6,8 +6,8 @@
     android:versionName="1.0" >
 
     <uses-sdk
-        android:minSdkVersion="8"
-        android:targetSdkVersion="15" />
+        android:minSdkVersion="14"
+        android:targetSdkVersion="19" />
 
     <application
         android:name=".ScriptApplication"
@@ -35,7 +35,8 @@
                 <action android:name="com.android.kalite27.ScriptService" />
             </intent-filter>
         </service>
-        <service android:name=".BackgroundScriptService" >
+        <service android:name=".BackgroundScriptService"
+          android:stopWithTask="false" >
             <intent-filter>
                 <action android:name="com.android.kalite27.BackgroundScriptService" />
             </intent-filter>
