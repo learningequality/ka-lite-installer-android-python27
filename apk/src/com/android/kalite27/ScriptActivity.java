@@ -44,7 +44,6 @@ import android.util.Log;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -70,9 +69,9 @@ public class ScriptActivity extends Activity {
 	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
 	private TextView ServerStatusTextView;
 	private WebView wv;
-	private Context context;
 	private String path;
 	private KaliteUtilities mUtilities;
+	GlobalValues gv;
 	  
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -86,9 +85,8 @@ public class ScriptActivity extends Activity {
 		//  return;
 		//}
 	  	mUtilities = new KaliteUtilities();
-		
-		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
-		Log.d(GlobalConstants.LOG_TAG, "Process " + android.os.Process.myPid() + "LaunchingActivity is checked elieli.");
+	  	GlobalValues.initialize(this);
+		gv = GlobalValues.getInstance();
 		
 		// set the lauching ui
 		setContentView(R.layout.activity_launching);
@@ -114,23 +112,52 @@ public class ScriptActivity extends Activity {
     	if(installNeeded) {
     		// this will also call generate_local_settings after unzip library
   		  	new InstallAsyncTask().execute();
-    	}
+    	}else{
+			runScriptService("start");
+		}
+
+		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
+		wv = new WebView(this);
+		WebSettings ws = wv.getSettings();
+		ws.setJavaScriptEnabled(true);
+		wv.setWebChromeClient(new WebChromeClient());
+		wv.setWebViewClient(new WebViewClient());
+		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
+
+		// new
+		// ExitCodeAsyncTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+		prefs_listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+			public void onSharedPreferenceChanged(SharedPreferences prefs,
+					String key) {
+				int server_status = prefs.getInt("python_exit_code", -7);
+				String kalite_command = prefs.getString("kalite_command", "no command yet");
+				
+				if (server_status == 0) {  // 0 means the server is running
+					wv.loadUrl("http://0.0.0.0:8008/");
+					setContentView(wv);
+					prefs.unregisterOnSharedPreferenceChangeListener(this);
+				}else if(server_status != 0 && kalite_command.equals("start")){
+					runScriptService("status");
+				}else if(kalite_command.equals("status")){
+					ServerStatusTextView.setText(mUtilities.exitCodeMatch(server_status));
+				}
+			}
+		};
+		prefs.registerOnSharedPreferenceChangeListener(prefs_listener);
   }
 	
-	@Override
-	protected void onStop() {
-	    super.onStop();
+// 	@Override
+// 	protected void onStop() {
+// 	    super.onStop();
 //	    prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
-	}
+// 	}
 	
 	/**
 	 * When user click start 
 	 * @param view
 	 */
 	public void startServer(View view) {
-		if (check_directory(path)) {
-			runScriptService();
-		}
 	}
 	
 	/**
@@ -268,8 +295,8 @@ public class ScriptActivity extends Activity {
 		    	sendmsg("installFailed", "");
 	    	}
   		  	mUtilities.generate_local_settings(path, this);
-		    //runScriptService();
-		    //finish();
+
+		    runScriptService("start");
 		   }
 	   
 	  }
@@ -279,7 +306,7 @@ public class ScriptActivity extends Activity {
 		  startService(new Intent(this, ScriptService.class));
 	  }
 	  else {
-		  startService(new Intent(this, BackgroundScriptService.class)); 
+		  startService(new Intent(this, BackgroundScriptService.class).putExtra("kalite_command", kalite_command));
 	  }
   }
   
@@ -352,5 +379,12 @@ public class ScriptActivity extends Activity {
 
 	  //finish();
   }
+
+  	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		Log.e(GlobalConstants.LOG_TAG, "main activity onDestroy is called elieli");
+		runScriptService("stop");
+	}
   
 }

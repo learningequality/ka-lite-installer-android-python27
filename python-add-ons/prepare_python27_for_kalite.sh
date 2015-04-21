@@ -22,3 +22,5 @@ if [ "$1" = "kalite" ]; then
 	echo "downloading kalite develop branch to your current directory"
 	git clone -b develop https://github.com/learningequality/ka-lite.git
 fi
+
+# !! important !! don't forget to modify the kalitectl.py file in line 82, to make the KALITE_HOME path at the current working dir instead of root level.

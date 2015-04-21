@@ -146,9 +146,10 @@ public class Process {
         returnValue = Exec.waitFor(mPid.get());
         mEndTime = System.currentTimeMillis();
         int pid = mPid.getAndSet(PID_INIT_VALUE);
-        //eli
-//        GlobalValues.getInstance().setPythonExitCode(returnValue);
-        //eli
+        //pass python exit code to main activity via singlton GlobalValues(sharepreference)
+        GlobalValues gv = GlobalValues.getInstance();
+        gv.setPythonExitCode(returnValue, mArguments.get(1));
+        
         Log.d(GlobalConstants.LOG_TAG, "Process " + pid + " exited with result code " + returnValue + ".");
         try {
           mIn.close();
