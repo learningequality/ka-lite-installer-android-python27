@@ -294,7 +294,7 @@ public class ScriptActivity extends Activity {
 	    	else {
 		    	sendmsg("installFailed", "");
 	    	}
-  		  	mUtilities.generate_local_settings(path, this);
+  		  	mUtilities.generate_local_settings(path, getApplicationContext());
 
 		    runScriptService("start");
 		   }
