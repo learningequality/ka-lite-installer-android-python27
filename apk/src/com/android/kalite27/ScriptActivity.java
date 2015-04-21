@@ -54,7 +54,10 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.View;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -301,7 +304,7 @@ public class ScriptActivity extends Activity {
 	   
 	  }
 	
-  private void runScriptService() {
+  private void runScriptService(String kalite_command) {
 	  if(GlobalConstants.IS_FOREGROUND_SERVICE) {
 		  startService(new Intent(this, ScriptService.class));
 	  }

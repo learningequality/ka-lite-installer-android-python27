@@ -52,7 +52,7 @@ public class KaliteUtilities {
 	 * Overwrite the local_settings based on the file pick
 	 * @param path
 	 */
-	private void generate_local_settings(String path, Context context){
+	void generate_local_settings(String path, Context context){
 		try {
 			// First check if there is RSA saved
 			String RSA = "";
@@ -149,7 +149,7 @@ public class KaliteUtilities {
 	 * @param file
 	 * @return
 	 */
-	private String readCopyOfSettings(File file) {
+	String readCopyOfSettings(File file) {
 		String settings = "";
 		try {
 			FileReader fileReader = new FileReader(file);
