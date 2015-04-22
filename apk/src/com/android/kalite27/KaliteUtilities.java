@@ -56,14 +56,14 @@ public class KaliteUtilities {
 		try {
 			// First check if there is RSA saved
 			String RSA = "";
-			File RSA_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/RSA_settings.py");
-	        if(RSA_settings.exists()){
-	        	RSA = readCopyOfSettings(RSA_settings);
+			File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/local_settings.py");
+	        if(copy_settings.exists()){
+	        	RSA = readRSA(copy_settings);
 	        } else {
 	        	// if there is no RSA saved, generate new RSA
 	        	RSA = generateRSA();
 	        }
-	        if (RSA.length() < 100) {
+	        if (RSA.length() < 30) {
 	        	RSA = generateRSA();
 	        }
 			
@@ -108,7 +108,7 @@ public class KaliteUtilities {
                     myOutWriter.append(gut);
                     myOutWriter.close();
                     fOut.close();
-                    makeCopyOfSettings(RSA,path);
+                    makeCopyOfSettings(newFile);
                 } catch(Exception e){
                 	System.out.println("Failed to write file");
                 }
@@ -144,11 +144,53 @@ public class KaliteUtilities {
 		return key;
 	}
 	
+	String readPath(File file) {
+		String path = "";
+		String setting = readSetting(file);
+		String startStr = "CONTENT_ROOT = \"";
+		int start = setting.indexOf(startStr);
+		if (start != -1) {
+			int end = setting.indexOf("/content/\"");
+			path = setting.substring(start+startStr.length(), end);
+		}
+		return path;
+	}
+	
+	String readRSA(File file) {
+		String RSA = "";
+		String setting = readSetting(file);
+		int start = setting.indexOf("OWN_DEVICE_PUBLIC_KEY");
+		if (start != -1) {
+			String endStr = "-----END RSA PRIVATE KEY-----";
+			int end = setting.indexOf(endStr) + endStr.length();
+			RSA = setting.substring(start, end);
+		}
+		return RSA;
+	}
+	
+	private String readSetting(File file) {
+		String setting = "";
+		try {
+			FileReader fileReader = new FileReader(file);
+			BufferedReader bufferedReader = new BufferedReader(fileReader);
+			StringBuffer stringBuffer = new StringBuffer();
+			String line;
+			while ((line = bufferedReader.readLine()) != null) {
+				stringBuffer.append(line);
+				stringBuffer.append("\n");
+			}
+			fileReader.close();
+			setting = stringBuffer.toString();
+		} catch (IOException e) {
+			System.out.println("Failed to read file");
+		}
+		return setting;
+	}
 	/**
 	 * Read setting from local file
 	 * @param file
 	 * @return
-	 */
+	 
 	String readCopyOfSettings(File file) {
 		String settings = "";
 		try {
@@ -166,14 +208,14 @@ public class KaliteUtilities {
 			System.out.println("Failed to read file");
 		}
 		return settings;
-	}
+	}*/
 	
 	/**
 	 * Make a local copy of the setting of RSA and path
 	 * @param RSA
 	 * @param content
 	 */
-	private void makeCopyOfSettings(String RSA, String content) {
+	private void makeCopyOfSettings(File file) {
 		try {
 			String externalStorage = Environment.getExternalStorageDirectory().getPath();
 			String setting_folder = externalStorage + "/kalite_essential";
@@ -181,34 +223,19 @@ public class KaliteUtilities {
 			if (!folder.isDirectory()) {
 				folder.mkdir();
 			}
-			String RSA_path = setting_folder + "/RSA_settings.py";
-			String content_path = setting_folder + "/content_settings.py";
-			File RSA_settings = new File(RSA_path);
-			// only write RSA at first time
-	        if (!RSA_settings.exists()){
-	        	RSA_settings.createNewFile();
-	            try
-	           	{
-	                FileOutputStream fOut = new FileOutputStream(RSA_settings);
-	                OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
-	                myOutWriter.append(RSA);
-	                myOutWriter.close();
-	                fOut.close();
-	            } catch(Exception e){
-	            	System.out.println("Failed to write file");
-	            }
-	        }
-	        File content_settings = new File(content_path);
-	        // overwrite path
-	        if (content_settings.exists()){
-	        	content_settings.delete();
+			String copy_path = setting_folder + "/local_settings.py";
+			File copy_settings = new File(copy_path);
+	        // overwrite copy
+	        if (copy_settings.exists()){
+	        	copy_settings.delete();
 	        } 
-	        content_settings.createNewFile();
+	        copy_settings.createNewFile();
+	        String settings = readSetting(file);
 	        try
 	        {
-	        	FileOutputStream fOut = new FileOutputStream(content_settings);
+	        	FileOutputStream fOut = new FileOutputStream(copy_settings);
 	        	OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
-	        	myOutWriter.append(content);
+	        	myOutWriter.append(settings);
 	        	myOutWriter.close();
 	        	fOut.close();
 	        } catch(Exception e){
