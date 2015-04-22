@@ -96,10 +96,10 @@ public class ScriptActivity extends Activity {
 		
 		// set the file path
 		// first check if the user has setting saved
-		File path_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
-				"/kalite_essential/content_settings.py");
-        if(path_settings.exists()){
-        	this.path = mUtilities.readCopyOfSettings(path_settings);
+		File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
+				"/kalite_essential/local_settings.py");
+        if(copy_settings.exists()){
+        	this.path = mUtilities.readPath(copy_settings);
         	this.path = this.path.replaceAll("\n","");
         } else {
         	// if there is no setting saved, use the external storage
