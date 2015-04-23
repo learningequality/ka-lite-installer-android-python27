@@ -48,6 +48,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -59,6 +60,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -71,9 +73,12 @@ public class ScriptActivity extends Activity {
 	private SharedPreferences prefs;
 	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
 	private TextView ServerStatusTextView;
+	private TextView FileTextView;
 	private WebView wv;
 	private String path;
 	private KaliteUtilities mUtilities;
+	private Button retryButton;
+	private ProgressBar spinner;
 	GlobalValues gv;
 	  
 	@Override
@@ -93,6 +98,10 @@ public class ScriptActivity extends Activity {
 		
 		// set the lauching ui
 		setContentView(R.layout.activity_launching);
+
+		retryButton = (Button) findViewById(R.id.buttonStart);
+		retryButton.setVisibility(View.INVISIBLE);
+		spinner = (ProgressBar)findViewById(R.id.progressBar);
 		
 		// set the file path
 		// first check if the user has setting saved
@@ -106,7 +115,10 @@ public class ScriptActivity extends Activity {
         	this.path = Environment.getExternalStorageDirectory().getPath();
         }
 		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-		FileTextView.setText(this.path);
+		if(path.length() != 0){
+			FileTextView.setText("Content Location: " + this.path);
+			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
+		}
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
@@ -137,6 +149,7 @@ public class ScriptActivity extends Activity {
 				String kalite_command = prefs.getString("kalite_command", "no command yet");
 				
 				if (server_status == 0) {  // 0 means the server is running
+					spinner.setVisibility(View.GONE);
 					wv.loadUrl("http://0.0.0.0:8008/");
 					setContentView(wv);
 					prefs.unregisterOnSharedPreferenceChangeListener(this);
@@ -144,6 +157,9 @@ public class ScriptActivity extends Activity {
 					runScriptService("status");
 				}else if(kalite_command.equals("status")){
 					ServerStatusTextView.setText(mUtilities.exitCodeMatch(server_status));
+					ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+					spinner.setVisibility(View.INVISIBLE);
+					retryButton.setVisibility(View.VISIBLE);
 				}
 			}
 		};
@@ -161,6 +177,10 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void startServer(View view) {
+		retryButton.setVisibility(View.INVISIBLE);
+		spinner.setVisibility(View.VISIBLE);
+		ServerStatusTextView.setText("Retry to start the server ... ");
+		runScriptService("start");
 	}
 	
 	/**
@@ -190,8 +210,8 @@ public class ScriptActivity extends Activity {
             		this.path = path;
 	            	// set the local settings
 					mUtilities.generate_local_settings(path, this);
-					TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-					FileTextView.setText(path);
+					FileTextView.setText("Content location: " + path);
+					FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
             	} else {
             		// TODO: the path is not changed
             	}

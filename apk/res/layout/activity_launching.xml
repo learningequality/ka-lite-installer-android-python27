@@ -3,44 +3,118 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="${relativePackage}.${activityClass}" >
+    
+    <RelativeLayout
+        android:id="@+id/logoContainer"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="30dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:background="#C4D7E3"
+        android:gravity="left">
+        
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/horizontal_logo_small" />
+    
+    </RelativeLayout>
 
     <Button
         android:id="@+id/buttonStart"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:text="Start"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="90dp"
+        android:layout_below="@id/logoContainer"
+        android:text="retry"
         android:onClick="startServer" />
     
-    <Button
-        android:id="@+id/buttonFile"
-        android:layout_width="200dp"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
+    <RelativeLayout
+        android:id="@+id/StatusContainer"
+        android:layout_marginTop="30dp"
         android:layout_below="@id/buttonStart"
-        android:layout_marginTop="20dp"
-        android:text="File Directory"
-        android:onClick="openDirPicker" />
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        
+        <TextView
+            android:id="@+id/ServerStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Starting server ... "
+            android:textColor="#005987"
+            android:layout_centerHorizontal="true"
+            android:textSize="30dp" />
+    
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/ServerStatus" />
+        
+    </RelativeLayout>
 
     <TextView
         android:id="@+id/FileDirectory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_below="@id/buttonFile"
+        android:layout_below="@id/StatusContainer"
         android:layout_marginTop="20dp"
-        android:text="/storage"
-        android:ems="10" />
-    
-    <TextView
-        android:id="@+id/ServerStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/FileDirectory"
-        android:layout_marginTop="20dp"
-        android:text="server status: "
-        android:ems="10" />
+        android:text=" Click me to locate your content folder for Ka-Lite. "
+        android:padding="10dp"
+        android:textColor="#FFFFFF"
+        android:background="#FF9966"
+        android:textSize="17dp" 
+        android:onClick="openDirPicker"
+        android:clickable="true" />
 
+    <RelativeLayout
+        android:id="@+id/footer"
+        android:layout_alignParentBottom="true"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:background="#C4D7E3">
+        
+        <ImageView
+            android:id="@+id/footer1"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:layout_marginTop="10dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/fle" />
+        
+        <TextView
+            android:id="@+id/footer2"
+            android:layout_below="@id/footer1"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:gravity="center_horizontal"
+            android:text="KA Lite version 0.14.dev © 2015"/>
+        
+        <TextView
+            android:id="@+id/footer3"
+            android:layout_below="@id/footer2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_horizontal"
+            android:text="Videos © 2015 Khan Academy (Creative Commons) // Exercises © 2015 Khan Academy"/>
+        
+        <ImageView
+            android:id="@+id/footer4"
+            android:layout_below="@id/footer3"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:layout_centerHorizontal="true"
+            android:src="@drawable/cc_by_nc_sa" />
+    
+    </RelativeLayout>
 
 </RelativeLayout>
