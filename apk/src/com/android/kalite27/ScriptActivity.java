@@ -26,20 +26,9 @@ import com.android.kalite27.config.GlobalConstants;
 import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 
-import android.util.Base64;
 import android.util.Log;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -79,6 +68,8 @@ public class ScriptActivity extends Activity {
 	private KaliteUtilities mUtilities;
 	private Button retryButton;
 	private ProgressBar spinner;
+	private boolean OpenWebViewConditionA = false;
+	private boolean OpenWebViewConditionB = false;
 	GlobalValues gv;
 	  
 	@Override
@@ -98,7 +89,7 @@ public class ScriptActivity extends Activity {
 		
 		// set the lauching ui
 		setContentView(R.layout.activity_launching);
-
+		
 		retryButton = (Button) findViewById(R.id.buttonStart);
 		retryButton.setVisibility(View.INVISIBLE);
 		spinner = (ProgressBar)findViewById(R.id.progressBar);
@@ -114,7 +105,7 @@ public class ScriptActivity extends Activity {
         	// if there is no setting saved, use the external storage
         	this.path = Environment.getExternalStorageDirectory().getPath();
         }
-		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
+		FileTextView = (TextView)findViewById(R.id.FileDirectory);
 		if(path.length() != 0){
 			FileTextView.setText("Content Location: " + this.path);
 			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
@@ -126,6 +117,7 @@ public class ScriptActivity extends Activity {
     	// first time running
     	if(installNeeded) {
     		// this will also call generate_local_settings after unzip library
+    		spinner.setVisibility(View.INVISIBLE);
   		  	new InstallAsyncTask().execute();
     	}else{
 			runScriptService("start");
@@ -149,10 +141,8 @@ public class ScriptActivity extends Activity {
 				String kalite_command = prefs.getString("kalite_command", "no command yet");
 				
 				if (server_status == 0) {  // 0 means the server is running
-					spinner.setVisibility(View.GONE);
-					wv.loadUrl("http://0.0.0.0:8008/");
-					setContentView(wv);
-					prefs.unregisterOnSharedPreferenceChangeListener(this);
+					OpenWebViewConditionA = true;
+					openWebViewIfMeetAllConditions();
 				}else if(server_status != 0 && kalite_command.equals("start")){
 					runScriptService("status");
 				}else if(kalite_command.equals("status")){
@@ -171,6 +161,15 @@ public class ScriptActivity extends Activity {
 // 	    super.onStop();
 //	    prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 // 	}
+	
+	private void openWebViewIfMeetAllConditions(){
+		if(OpenWebViewConditionA && OpenWebViewConditionB){
+			spinner.setVisibility(View.GONE);
+			wv.loadUrl("http://0.0.0.0:8008/");
+			setContentView(wv);
+			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
+		}
+	}
 	
 	/**
 	 * When user click start 
@@ -212,8 +211,16 @@ public class ScriptActivity extends Activity {
 					mUtilities.generate_local_settings(path, this);
 					FileTextView.setText("Content location: " + path);
 					FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
+					ServerStatusTextView.setText("Starting server ... ");
+					ServerStatusTextView.setTextColor(Color.parseColor("#005987"));
+					spinner.setVisibility(View.VISIBLE);
+					runScriptService("start");
+					OpenWebViewConditionB = true;
+					openWebViewIfMeetAllConditions();
             	} else {
             		// TODO: the path is not changed
+            		OpenWebViewConditionB = true;
+            		openWebViewIfMeetAllConditions();
             	}
             }
 		}
@@ -319,7 +326,8 @@ public class ScriptActivity extends Activity {
 	    	}
   		  	mUtilities.generate_local_settings(path, getApplicationContext());
 
-		    runScriptService("start");
+  		  	ServerStatusTextView.setText("No Content Available");
+  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
 		   }
 	   
 	  }
