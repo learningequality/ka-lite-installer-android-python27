@@ -69,7 +69,7 @@ public class ScriptActivity extends Activity {
 	private Button retryButton;
 	private ProgressBar spinner;
 	private boolean OpenWebViewConditionA = false;
-	private boolean OpenWebViewConditionB = false;
+	private boolean OpenWebViewConditionB = true;
 	GlobalValues gv;
 	  
 	@Override
@@ -187,6 +187,7 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void openDirPicker(View view) {
+		OpenWebViewConditionB = false;
 		Intent intent = new Intent(this, DirectoryPicker.class); 
 		// set options here 
 		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
