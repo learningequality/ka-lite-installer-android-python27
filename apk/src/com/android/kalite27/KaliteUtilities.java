@@ -78,12 +78,12 @@ public class KaliteUtilities {
             content_data = "\nCONTENT_DATA_PATH = \"" + path +"/data/\"";
             
             // setting info
-            String gut ="CHANNEL = \"connectteaching\"" +
+            String gut ="CHANNEL = \"khan\"" +
             "\nLOAD_KHAN_RESOURCES = False" +
             "\nLOCKDOWN = True" +   //jamie ask to add it, need to test
             "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
             "\nPDFJS = False" +
-            database_path +
+            //database_path +
             content_root +
             content_data +
             "\nDEBUG = True" +
@@ -161,9 +161,12 @@ public class KaliteUtilities {
 		String setting = readSetting(file);
 		int start = setting.indexOf("OWN_DEVICE_PUBLIC_KEY");
 		if (start != -1) {
-			String endStr = "-----END RSA PRIVATE KEY-----";
-			int end = setting.indexOf(endStr) + endStr.length();
-			RSA = setting.substring(start, end);
+			String endStr = "-----END RSA PRIVATE KEY-----\"";
+			int end = setting.indexOf(endStr);
+			if (end > start) {
+				end += endStr.length();
+				RSA = setting.substring(start, end);
+			}
 		}
 		return RSA;
 	}
