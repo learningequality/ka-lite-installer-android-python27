@@ -84,6 +84,7 @@ public class KaliteUtilities {
             
             // setting info
             String gut ="CHANNEL = \"khan\"" +
+            "\nDO_NOT_RELOAD_CONTENT_CACHE_AT_STARTUP = True" +
 //            "\nLOAD_KHAN_RESOURCES = True" +
 //            "\nLOCKDOWN = True" +   //jamie ask to add it, need to test
 //            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
