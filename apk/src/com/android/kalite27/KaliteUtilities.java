@@ -1,13 +1,18 @@
 package com.android.kalite27;
 
+import com.android.kalite27.config.GlobalConstants;
+
 import android.content.Context;
 import android.os.Environment;
 import android.util.Base64;
+import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.security.Key;
@@ -18,7 +23,7 @@ public class KaliteUtilities {
 	// Path is depending on the ka_lite.zip file
 	private final String local_settings_path = "/kalite/local_settings.py";
 
-	public String exitCodeMatch(int server_status) {
+	public String exitCodeTranslate(int server_status) {
 		switch (server_status) {
 		case -7:
 			return "Please wait, server is starting up";
@@ -52,7 +57,7 @@ public class KaliteUtilities {
 	 * Overwrite the local_settings based on the file pick
 	 * @param path
 	 */
-	 void generate_local_settings(String path, Context context){
+	 void generate_local_settings(Context context){
 		try {
 			// First check if there is RSA saved
 			String RSA = "";
@@ -66,7 +71,7 @@ public class KaliteUtilities {
 	        if (RSA.length() < 30) {
 	        	RSA = generateRSA();
 	        }
-			
+	        			
             String content_root = null;
             String content_data = null;
             
@@ -74,16 +79,16 @@ public class KaliteUtilities {
             String local_settings_destination = context.getFilesDir().getAbsolutePath() + local_settings_path;
             String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
             
-            content_root = "\nCONTENT_ROOT = \"" + path +"/content/\"";
-            content_data = "\nCONTENT_DATA_PATH = \"" + path +"/data/\"";
+            content_root = "\nCONTENT_ROOT = \"content root not specified yet\"";
+            content_data = "\nCONTENT_DATA_PATH = \"content data not specified yet\"";
             
             // setting info
             String gut ="CHANNEL = \"khan\"" +
-            "\nLOAD_KHAN_RESOURCES = False" +
-            "\nLOCKDOWN = True" +   //jamie ask to add it, need to test
-            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
+//            "\nLOAD_KHAN_RESOURCES = True" +
+//            "\nLOCKDOWN = True" +   //jamie ask to add it, need to test
+//            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
             "\nPDFJS = False" +
-            //database_path +
+            database_path +
             content_root +
             content_data +
             "\nDEBUG = True" +
@@ -108,7 +113,9 @@ public class KaliteUtilities {
                     myOutWriter.append(gut);
                     myOutWriter.close();
                     fOut.close();
-                    makeCopyOfSettings(newFile);
+					if(!copy_settings.exists()){
+						makeCopyOfSettings(newFile);
+					}
                 } catch(Exception e){
                 	System.out.println("Failed to write file");
                 }
@@ -144,9 +151,51 @@ public class KaliteUtilities {
 		return key;
 	}
 	
-	String readPath(File file) {
+	public void setContentPath(String newPath, Context context){
+		BufferedReader br = null;
+	    BufferedWriter bw = null;
+		String local_settings_old = context.getFilesDir().getAbsolutePath() + local_settings_path;
+		String local_settings_temp = context.getFilesDir().getAbsolutePath() + "/kalite/local_settings_temp.py";
+		try {
+			br = new BufferedReader(new FileReader(local_settings_old));
+	        bw = new BufferedWriter(new FileWriter(local_settings_temp));
+	        String line;
+	        while ((line = br.readLine()) != null) {
+	            if (line.contains("CONTENT_ROOT")){
+	               line = "CONTENT_ROOT = \"" + newPath +"/content/\"";
+	            } else if (line.contains("CONTENT_DATA_PATH")){
+	            	line = "CONTENT_DATA_PATH = \"" + newPath +"/data/\"";
+	            }
+	            bw.write(line+"\n");
+	         }
+		} catch (Exception e) {
+	        System.out.println("Problem reading file.");
+	    } finally {
+	    	try {
+	    		if(br != null){
+	    			br.close();
+	    		}
+			} catch (IOException e) {}
+	    	try {
+	    		if(bw != null){
+	    			bw.close();
+	    		}
+			} catch (IOException e) {}
+	    }
+		// Once everything is complete, delete old file..
+		File oldFile = new File(local_settings_old);
+		oldFile.delete();
+
+		// And rename tmp file's name to old file name
+		File newFile = new File(local_settings_temp);
+		newFile.renameTo(oldFile);
+	}
+	
+	String readContentPath(Context context) {
+		String local_settings_destination = context.getFilesDir().getAbsolutePath() + local_settings_path;
+		File internal_local_settings = new File(local_settings_destination);
 		String path = "";
-		String setting = readSetting(file);
+		String setting = readSetting(internal_local_settings);
 		String startStr = "CONTENT_ROOT = \"";
 		int start = setting.indexOf(startStr);
 		if (start != -1) {
@@ -224,14 +273,11 @@ public class KaliteUtilities {
 			String setting_folder = externalStorage + "/kalite_essential";
 			File folder = new File(setting_folder);
 			if (!folder.isDirectory()) {
-				folder.mkdir();
+				folder.mkdirs();
 			}
 			String copy_path = setting_folder + "/local_settings.py";
 			File copy_settings = new File(copy_path);
-	        // overwrite copy
-	        if (copy_settings.exists()){
-	        	copy_settings.delete();
-	        } 
+
 	        copy_settings.createNewFile();
 	        String settings = readSetting(file);
 	        try
