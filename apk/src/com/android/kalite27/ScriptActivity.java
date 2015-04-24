@@ -43,6 +43,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -136,7 +137,7 @@ public class ScriptActivity extends Activity {
 				if (server_status == 0) {  // 0 means the server is running
 					OpenWebViewConditionA = true;
 					openWebViewIfMeetAllConditions();
-				}else if(server_status != 0 && kalite_command.equals("start")){
+				}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
 					runScriptService("status");
 				}else if(kalite_command.equals("status")){
 					ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
@@ -194,30 +195,34 @@ public class ScriptActivity extends Activity {
 	 */
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
-		if(requestCode == DirectoryPicker.PICK_DIRECTORY && resultCode == RESULT_OK) { 
-			Bundle extras = data.getExtras(); 
-			String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
-			// do stuff with path
-            if(check_directory(path)){
-            	// if the path is changed
-            	if (contentPath != path) {
-	            	// set the local settings
-            		mUtilities.setContentPath(path, this);
-					FileTextView.setText("Content location: " + path);
-					FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
-					ServerStatusTextView.setText("Starting server ... ");
-					ServerStatusTextView.setTextColor(Color.parseColor("#005987"));
-					spinner.setVisibility(View.VISIBLE);
-					runScriptService("restart");
-					OpenWebViewConditionB = true;
-					Log.e(GlobalConstants.LOG_TAG, "elieli chagned content path");
-            	} else {
-            		// TODO: the path is not changed
-            		Log.e(GlobalConstants.LOG_TAG, "elieli UUnchanged content path");
-            		OpenWebViewConditionB = true;
-            		openWebViewIfMeetAllConditions();
-            	}
-            }
+		if(requestCode == DirectoryPicker.PICK_DIRECTORY){
+			if(resultCode == RESULT_OK) { 
+				Bundle extras = data.getExtras(); 
+				String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
+				// do stuff with path
+	            if(check_directory(path)){
+	            	// if the path is changed
+	            	if (contentPath != path) {
+		            	// set the local settings
+	            		mUtilities.setContentPath(path, this);
+						FileTextView.setText("Content location: " + path);
+						FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
+						ServerStatusTextView.setText("Starting server ... ");
+						ServerStatusTextView.setTextColor(Color.parseColor("#005987"));
+						spinner.setVisibility(View.VISIBLE);
+						runScriptService("restart");
+						OpenWebViewConditionB = true;
+	            	} else {
+	            		// TODO: the path is not changed
+	            		OpenWebViewConditionB = true;
+	            		openWebViewIfMeetAllConditions();
+	            	}
+	            }
+			}else{
+				//exit file browser by pressing back buttom
+				OpenWebViewConditionB = true;
+				openWebViewIfMeetAllConditions();
+			}
 		}
 	}
 
@@ -236,11 +241,32 @@ public class ScriptActivity extends Activity {
                 .setMessage("The selected directory doesn't contain the data or content folder")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
-                    	Log.e(GlobalConstants.LOG_TAG, "elieli exit dialog");
                     	OpenWebViewConditionB = true;
     					openWebViewIfMeetAllConditions();
                     }
                  })
+                 .setOnCancelListener(new DialogInterface.OnCancelListener() {         
+                	 @Override
+                	 public void onCancel(DialogInterface dialog) {
+                		 OpenWebViewConditionB = true;
+                		 openWebViewIfMeetAllConditions();
+                	 }
+                 })
+                .setOnKeyListener(new DialogInterface.OnKeyListener(){
+					@Override
+					public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+						if (keyCode == KeyEvent.KEYCODE_BACK && 
+			                event.getAction() == KeyEvent.ACTION_UP && 
+			                !event.isCanceled()) {
+							Log.e(GlobalConstants.LOG_TAG, "elieli OnKeyListener dialog");
+			                dialog.cancel();
+			                OpenWebViewConditionB = true;
+	    					openWebViewIfMeetAllConditions();
+			                return true;
+			            }
+						return false;
+					}
+                })
                 .show();
         	return false;
         }
