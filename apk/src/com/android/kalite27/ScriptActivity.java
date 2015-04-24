@@ -56,15 +56,12 @@ import android.widget.Toast;
 public class ScriptActivity extends Activity {
 	ProgressDialog myProgressDialog; 
 	
-	// Path is depending on the ka_lite.zip file
-	private final String local_settings_path = "/kalite/local_settings.py";
-	
 	private SharedPreferences prefs;
 	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
 	private TextView ServerStatusTextView;
 	private TextView FileTextView;
 	private WebView wv;
-	private String path;
+	private String contentPath;
 	private KaliteUtilities mUtilities;
 	private Button retryButton;
 	private ProgressBar spinner;
@@ -91,25 +88,11 @@ public class ScriptActivity extends Activity {
 		setContentView(R.layout.activity_launching);
 		
 		retryButton = (Button) findViewById(R.id.buttonStart);
-		retryButton.setVisibility(View.INVISIBLE);
 		spinner = (ProgressBar)findViewById(R.id.progressBar);
-		
-		// set the file path
-		// first check if the user has setting saved
-		File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
-				"/kalite_essential/local_settings.py");
-        if(copy_settings.exists()){
-        	this.path = mUtilities.readPath(copy_settings);
-        	this.path = this.path.replaceAll("\n","");
-        } else {
-        	// if there is no setting saved, use the external storage
-        	this.path = Environment.getExternalStorageDirectory().getPath();
-        }
+		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
 		FileTextView = (TextView)findViewById(R.id.FileDirectory);
-		if(path.length() != 0){
-			FileTextView.setText("Content Location: " + this.path);
-			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
-		}
+		
+		retryButton.setVisibility(View.INVISIBLE);
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
@@ -120,10 +103,20 @@ public class ScriptActivity extends Activity {
     		spinner.setVisibility(View.INVISIBLE);
   		  	new InstallAsyncTask().execute();
     	}else{
-			runScriptService("start");
+    		contentPath = mUtilities.readContentPath(this);
+        	contentPath = contentPath.replaceAll("\n","");
+    		File contentFiles = new File(contentPath);
+    		if(contentFiles.exists()){
+    			FileTextView.setText("Content Location: " + contentPath);
+    			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
+    			runScriptService("start");
+    		}else{
+    			spinner.setVisibility(View.INVISIBLE);
+    			ServerStatusTextView.setText("Content does not exist");
+      		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+    		}
 		}
 
-		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
 		wv = new WebView(this);
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
@@ -146,7 +139,7 @@ public class ScriptActivity extends Activity {
 				}else if(server_status != 0 && kalite_command.equals("start")){
 					runScriptService("status");
 				}else if(kalite_command.equals("status")){
-					ServerStatusTextView.setText(mUtilities.exitCodeMatch(server_status));
+					ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
 					ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
 					spinner.setVisibility(View.INVISIBLE);
 					retryButton.setVisibility(View.VISIBLE);
@@ -187,6 +180,7 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void openDirPicker(View view) {
+		Log.e(GlobalConstants.LOG_TAG, "elieli fileBrowser opend");
 		OpenWebViewConditionB = false;
 		Intent intent = new Intent(this, DirectoryPicker.class); 
 		// set options here 
@@ -206,20 +200,20 @@ public class ScriptActivity extends Activity {
 			// do stuff with path
             if(check_directory(path)){
             	// if the path is changed
-            	if (this.path != path) {
-            		this.path = path;
+            	if (contentPath != path) {
 	            	// set the local settings
-					mUtilities.generate_local_settings(path, this);
+            		mUtilities.setContentPath(path, this);
 					FileTextView.setText("Content location: " + path);
 					FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
 					ServerStatusTextView.setText("Starting server ... ");
 					ServerStatusTextView.setTextColor(Color.parseColor("#005987"));
 					spinner.setVisibility(View.VISIBLE);
-					runScriptService("start");
+					runScriptService("restart");
 					OpenWebViewConditionB = true;
-					openWebViewIfMeetAllConditions();
+					Log.e(GlobalConstants.LOG_TAG, "elieli chagned content path");
             	} else {
             		// TODO: the path is not changed
+            		Log.e(GlobalConstants.LOG_TAG, "elieli UUnchanged content path");
             		OpenWebViewConditionB = true;
             		openWebViewIfMeetAllConditions();
             	}
@@ -242,6 +236,9 @@ public class ScriptActivity extends Activity {
                 .setMessage("The selected directory doesn't contain the data or content folder")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
+                    	Log.e(GlobalConstants.LOG_TAG, "elieli exit dialog");
+                    	OpenWebViewConditionB = true;
+    					openWebViewIfMeetAllConditions();
                     }
                  })
                 .show();
@@ -325,8 +322,7 @@ public class ScriptActivity extends Activity {
 	    	else {
 		    	sendmsg("installFailed", "");
 	    	}
-  		  	mUtilities.generate_local_settings(path, getApplicationContext());
-
+  		  	mUtilities.generate_local_settings(getApplicationContext());
   		  	ServerStatusTextView.setText("No Content Available");
   		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
 		   }
