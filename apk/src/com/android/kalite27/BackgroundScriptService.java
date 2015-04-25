@@ -144,7 +144,7 @@ public class BackgroundScriptService extends Service {
 			return START_STICKY;
 		}else{
 			new startMyAsyncTask("stop").execute(startId);
-			return START_CONTINUATION_MASK;
+			return START_REDELIVER_INTENT;
 		}
 	}
 
