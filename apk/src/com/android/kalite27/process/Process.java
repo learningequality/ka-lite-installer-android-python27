@@ -150,7 +150,7 @@ public class Process {
         GlobalValues gv = GlobalValues.getInstance();
         gv.setPythonExitCode(returnValue, mArguments.get(1));
         
-        Log.d(GlobalConstants.LOG_TAG, "Process " + pid + " exited with result code " + returnValue + ".");
+        Log.d(GlobalConstants.LOG_TAG, "Process " + pid + " exited with result code " + returnValue +"/"+ mArguments.get(1) + ".");
         try {
           mIn.close();
         } catch (IOException e) {
@@ -193,7 +193,7 @@ public class Process {
   }
 
   public String getSdcardPackageDirectory() {
-	return null;
+  return null;
   }
   
   public String getUptime() {
