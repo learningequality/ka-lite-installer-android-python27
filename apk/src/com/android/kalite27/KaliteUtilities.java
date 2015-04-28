@@ -76,6 +76,18 @@ public class KaliteUtilities {
 	 */
 	 void generate_local_settings(Context context){
 		try {
+			String externalStorage = Environment.getExternalStorageDirectory().getPath();
+			String setting_folder = externalStorage + "/kalite_essential";
+			File folder = new File(setting_folder);
+			if(!folder.isDirectory()){
+				folder.mkdirs();
+			}
+			String dataSqlite = externalStorage + "/kalite_essential/data.sqlite";
+			File sqlite = new File(dataSqlite);
+			if(!sqlite.exists()){
+				sqlite.createNewFile();
+			}
+					
 			// First check if there is RSA saved
 			String RSA = "";
 			File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/local_settings.py");
