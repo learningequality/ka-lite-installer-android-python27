@@ -65,6 +65,8 @@ public class ScriptActivity extends Activity {
 	
 	private SharedPreferences prefs;
 	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
+	private Editor editor;
+	private RelativeLayout startView;
 	private TextView ServerStatusTextView;
 	private TextView FileTextView;
 	private WebView wv;
@@ -72,11 +74,12 @@ public class ScriptActivity extends Activity {
 	private KaliteUtilities mUtilities;
 	private Button retryButton;
 	private ProgressBar spinner;
+	private ProgressBar webProgressBar;
 	private boolean OpenWebViewConditionA = false;
 	private boolean OpenWebViewConditionB = true;
 	GlobalValues gv;
 	  
-	@Override
+	@SuppressLint("NewApi") @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		// mounted sdcard ?
@@ -129,6 +132,9 @@ public class ScriptActivity extends Activity {
 		ws.setJavaScriptEnabled(true);
 		wv.setWebChromeClient(new WebChromeClient());
 		wv.setWebViewClient(new WebViewClient());
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+		      WebView.setWebContentsDebuggingEnabled(true);
+		}
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
 
 		// new
