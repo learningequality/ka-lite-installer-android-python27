@@ -226,6 +226,9 @@ public class KaliteUtilities {
 		File internal_local_settings = new File(local_settings_destination);
 		String path = "";
 		String setting = readSetting(internal_local_settings);
+		if(setting.contains("not specified yet")){
+			return "Content not specified yet";
+		}
 		String startStr = "CONTENT_ROOT = \"";
 		int start = setting.indexOf(startStr);
 		if (start != -1) {
