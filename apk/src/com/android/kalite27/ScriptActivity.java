@@ -97,8 +97,11 @@ public class ScriptActivity extends Activity {
 		// set the lauching ui
 		setContentView(R.layout.activity_launching);
 		
+		startView = (RelativeLayout) findViewById(R.id.startView);
 		retryButton = (Button) findViewById(R.id.buttonStart);
 		spinner = (ProgressBar)findViewById(R.id.progressBar);
+		webProgressBar = (ProgressBar)findViewById(R.id.webProgressBar);
+//		webProgressBar.setVisibility(View.INVISIBLE);
 		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
 		FileTextView = (TextView)findViewById(R.id.FileDirectory);
 		
@@ -127,15 +130,33 @@ public class ScriptActivity extends Activity {
     		}
 		}
 
-		wv = new WebView(this);
+    	wv = (WebView)findViewById(R.id.webview);
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
-		wv.setWebChromeClient(new WebChromeClient());
-		wv.setWebViewClient(new WebViewClient());
+		ws.setBuiltInZoomControls(true); //enable zooming in webview
+		ws.setDisplayZoomControls(false); //get rid of the zoom controls
+		wv.setWebChromeClient(new MyWebChromeClient(webProgressBar));
+		wv.setWebViewClient(new WebViewClient(){
+			@Override
+			public void onPageFinished(WebView view, String url){
+				super.onPageFinished(view, url);
+				if(url.equals("http://0.0.0.0:8008/")){
+					startView.setVisibility(View.GONE);
+					wv.setVisibility(View.VISIBLE);
+				}
+			}
+		});
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 		      WebView.setWebContentsDebuggingEnabled(true);
 		}
+//		new PreCacheAsyncTask().execute();
+//		String jquery_mini = "<script src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js' type='text/javascript'></script>";
+//		wv.loadDataWithBaseURL("http://0.0.0.0:8008/", jquery_mini,"text/html","utf-8",null);
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
+		editor = prefs.edit();
+		//clean kalite_command from before, we are not using SharedPreferences in conventional way.
+		editor.clear();
+		editor.commit();
 
 		// new
 		// ExitCodeAsyncTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -143,19 +164,22 @@ public class ScriptActivity extends Activity {
 		prefs_listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			public void onSharedPreferenceChanged(SharedPreferences prefs,
 					String key) {
-				int server_status = prefs.getInt("python_exit_code", -7);
-				String kalite_command = prefs.getString("kalite_command", "no command yet");
-				
-				if (server_status == 0) {  // 0 means the server is running
-					OpenWebViewConditionA = true;
-					openWebViewIfMeetAllConditions();
-				}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
-					runScriptService("status");
-				}else if(kalite_command.equals("status")){
-					ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
-					ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
-					spinner.setVisibility(View.INVISIBLE);
-					retryButton.setVisibility(View.VISIBLE);
+				if(prefs.getBoolean("from_process", false)){
+					editor.putBoolean("from_process", false);
+					int server_status = prefs.getInt("python_exit_code", -7);
+					String kalite_command = prefs.getString("kalite_command", "no command yet");
+					
+					if (server_status == 0) {  // 0 means the server is running
+						OpenWebViewConditionA = true;
+						openWebViewIfMeetAllConditions();
+					}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
+						runScriptService("status");
+					}else if(kalite_command.equals("status")){
+						ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
+						ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+						spinner.setVisibility(View.INVISIBLE);
+						retryButton.setVisibility(View.VISIBLE);
+					}
 				}
 			}
 		};
@@ -173,9 +197,10 @@ public class ScriptActivity extends Activity {
 	
 	private void openWebViewIfMeetAllConditions(){
 		if(OpenWebViewConditionA && OpenWebViewConditionB){
-			spinner.setVisibility(View.GONE);
 			wv.loadUrl("http://0.0.0.0:8008/");
-			setContentView(wv);
+//			startView.setVisibility(View.GONE);
+//			webProgressBar.setVisibility(View.VISIBLE);
+//			wv.setVisibility(View.VISIBLE);
 			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 		}
 	}
