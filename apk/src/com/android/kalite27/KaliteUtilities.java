@@ -54,6 +54,22 @@ public class KaliteUtilities {
 		return "unknown python exit code";
 	}
 	
+	public void quitDialog(Context context){
+		final Context c = context;
+		new AlertDialog.Builder(context)
+			.setTitle("Do you want to exit Ka Lite ?")
+			.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					((Activity) c).finish();
+            	}
+			})
+			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					//do nothing
+				}
+        	})
+        	.show();
+	}
 	/**
 	 * Overwrite the local_settings based on the file pick
 	 * @param path
