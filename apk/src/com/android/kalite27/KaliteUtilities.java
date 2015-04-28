@@ -78,6 +78,24 @@ public class KaliteUtilities {
         	})
         	.show();
 	}
+	
+	public String readFromAssets(Context c, String file_name){
+		String text = null;
+		AssetManager assetManager = c.getAssets();
+	    try {
+			InputStream ips = assetManager.open(file_name);
+			int size = ips.available();
+			byte[] buffer = new byte[size];
+			ips.read(buffer);
+			ips.close();
+			text = new String(buffer);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return text;
+	}
+	
 	/**
 	 * Overwrite the local_settings based on the file pick
 	 * @param path
