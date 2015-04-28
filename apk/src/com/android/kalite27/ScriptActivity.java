@@ -150,11 +150,14 @@ public class ScriptActivity extends Activity {
 		prefs.registerOnSharedPreferenceChangeListener(prefs_listener);
   }
 	
-// 	@Override
-// 	protected void onStop() {
-// 	    super.onStop();
-//	    prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
-// 	}
+	@Override
+	public void onBackPressed() {
+	    if (wv.canGoBack()) {
+	        wv.goBack();
+	    } else {
+	    	mUtilities.quitDialog(this);
+	    }
+	}
 	
 	private void openWebViewIfMeetAllConditions(){
 		if(OpenWebViewConditionA && OpenWebViewConditionB){
