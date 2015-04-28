@@ -6,6 +6,7 @@ import android.content.Context;
 import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
+import android.widget.ProgressBar;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -294,5 +295,21 @@ public class KaliteUtilities {
 		} catch(Exception e) {
 			System.out.println("Failed to create a local copy");
 		}
+	}
+}
+
+class MyWebChromeClient extends WebChromeClient{
+	ProgressBar progressBar;
+	public MyWebChromeClient(ProgressBar pb){
+		progressBar = pb;
+	}
+	@Override
+	public void onProgressChanged(WebView view, int progress) {
+		progressBar.setVisibility(View.VISIBLE);
+    	progressBar.setProgress(progress);
+
+		if(progress == 100){
+			progressBar.setVisibility(View.GONE);
+        }
 	}
 }
