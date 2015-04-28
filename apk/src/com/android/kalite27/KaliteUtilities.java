@@ -2,10 +2,16 @@ package com.android.kalite27;
 
 import com.android.kalite27.config.GlobalConstants;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.res.AssetManager;
 import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
 import android.widget.ProgressBar;
 
 import java.io.BufferedReader;
@@ -15,10 +21,12 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import android.app.Activity;
 
 public class KaliteUtilities {
 	// Path is depending on the ka_lite.zip file
