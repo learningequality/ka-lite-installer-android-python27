@@ -195,6 +195,23 @@ public class ScriptActivity extends Activity {
 	    }
 	}
 	
+	public class PreCacheAsyncTask extends AsyncTask<Void, Void, Boolean> {
+		String pre_cache;
+		@Override
+		protected Boolean doInBackground(Void... params) {
+			pre_cache = "<script type='text/javascript'>\n" +
+					mUtilities.readFromAssets(getApplicationContext(), "jquery-ui.min.js") +
+					"\n</script>";
+			return true;
+		}
+		
+		@Override
+		   protected void onPostExecute(Boolean installStatus) {
+		   Log.e(GlobalConstants.LOG_TAG, "elieli Caching: "+pre_cache);
+		   wv.loadDataWithBaseURL("http://0.0.0.0:8008/", pre_cache,"text/html","utf-8",null);
+		}
+	}
+	
 	private void openWebViewIfMeetAllConditions(){
 		if(OpenWebViewConditionA && OpenWebViewConditionB){
 			wv.loadUrl("http://0.0.0.0:8008/");
