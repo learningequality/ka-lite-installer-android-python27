@@ -70,10 +70,10 @@ public class DirectoryPicker extends ListActivity {
         setContentView(R.layout.chooser_list);
         setTitle(dir.getAbsolutePath());
         Button btnChoose = (Button) findViewById(R.id.btnChoose);
-        String name = dir.getName();
+        /*String name = dir.getName();
         if(name.length() == 0)
         	name = "/";
-        btnChoose.setText("Choose " + "'" + name + "'");
+        btnChoose.setText("Choose " + "'" + name + "'");*/
         btnChoose.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
             	returnDir(dir.getAbsolutePath());
