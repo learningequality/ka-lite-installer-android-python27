@@ -242,7 +242,7 @@ public class ScriptActivity extends Activity {
 		OpenWebViewConditionB = false;
 		Intent intent = new Intent(this, DirectoryPicker.class); 
 		// set options here 
-		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
+		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getParentFile().getPath());
 		intent.putExtra(DirectoryPicker.ONLY_DIRS,true);
 		startActivityForResult(intent, DirectoryPicker.PICK_DIRECTORY);
 	}
