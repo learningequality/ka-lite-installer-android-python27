@@ -140,7 +140,7 @@ public class KaliteUtilities {
             // setting info
             String gut ="CHANNEL = \"khan\"" +
             "\nDO_NOT_RELOAD_CONTENT_CACHE_AT_STARTUP = True" +
-//            "\nLOAD_KHAN_RESOURCES = True" +
+            "\nLOAD_KHAN_RESOURCES = True" +
 //            "\nLOCKDOWN = True" +   // current develop branch does not work with this setting, yet
 //            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
             "\nPDFJS = False" +
@@ -252,14 +252,15 @@ public class KaliteUtilities {
 		File internal_local_settings = new File(local_settings_destination);
 		String path = "";
 		String setting = readSetting(internal_local_settings);
-		if(setting.contains("not specified yet")){
-			return "Content not specified yet";
-		}
+//		if(setting.contains("not specified yet")){
+//			return "Content not specified yet";
+//		}
 		String startStr = "CONTENT_ROOT = \"";
 		int start = setting.indexOf(startStr);
 		if (start != -1) {
-			int end = setting.indexOf("/content/\"");
-			path = setting.substring(start+startStr.length(), end);
+			int end = setting.indexOf("\n",start);
+			String content = "/content/\"";
+			path = setting.substring(start+startStr.length(), end-content.length());
 		}
 		return path;
 	}
