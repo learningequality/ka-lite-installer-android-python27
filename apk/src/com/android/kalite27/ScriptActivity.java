@@ -48,13 +48,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup.LayoutParams;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -260,7 +257,7 @@ public class ScriptActivity extends Activity {
 	            if(check_directory(path)){
 	            	// if the path is changed
 	            	if (contentPath != path) {
-		            	// set the local settings
+	            		// set the local settings
 	            		mUtilities.setContentPath(path, this);
 						FileTextView.setText("Content location: " + path);
 						FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
