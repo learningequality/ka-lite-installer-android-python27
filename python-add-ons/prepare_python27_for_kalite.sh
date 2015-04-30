@@ -23,4 +23,6 @@ if [ "$1" = "kalite" ]; then
 	git clone -b develop https://github.com/learningequality/ka-lite.git
 fi
 
+# to get rid of footer in kalite, replace the _footer.html file with an empty _footer.html
+
 # !! important !! don't forget to modify the kalitectl.py file in line 82, to make the KALITE_HOME path at the current working dir instead of root level.
