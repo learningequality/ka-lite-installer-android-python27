@@ -12,7 +12,6 @@ import android.os.Environment;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -48,7 +47,7 @@ public class DirectoryPicker extends ListActivity {
 	public static final int PICK_DIRECTORY = 43522432;
 	private File dir;
 	private boolean showHidden = false;
-	private boolean onlyDirs = true ;
+	private boolean onlyDirs = false;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -92,8 +91,7 @@ public class DirectoryPicker extends ListActivity {
         }
         
         final ArrayList<File> files = filter(dir.listFiles(), onlyDirs, showHidden);
-        String[] names = names(files);
-        setListAdapter(new ArrayAdapter<String>(this, R.layout.list_item, names));        	
+        setListAdapter(new FileListAdapter(this, files));        	
         
 
         lv.setOnItemClickListener(new OnItemClickListener() {
