@@ -26,57 +26,58 @@ import com.android.kalite27.config.GlobalConstants;
 import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 
-import android.util.Base64;
 import android.util.Log;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class ScriptActivity extends Activity {
 	ProgressDialog myProgressDialog; 
 	
-	// Path is depending on the ka_lite.zip file
-	private final String local_settings_path = "/kalite/local_settings.py";
-	
 	private SharedPreferences prefs;
 	private SharedPreferences.OnSharedPreferenceChangeListener prefs_listener;
+	private Editor editor;
+	private RelativeLayout startView;
 	private TextView ServerStatusTextView;
+	private TextView FileTextView;
 	private WebView wv;
-	private String path;
+	private String contentPath;
 	private KaliteUtilities mUtilities;
+	private Button retryButton;
+	private ProgressBar spinner;
+	private ProgressBar webProgressBar;
+	private boolean OpenWebViewConditionA = false;
+	private boolean OpenWebViewConditionB = true;
 	GlobalValues gv;
 	  
-	@Override
+	@SuppressLint("NewApi") @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		// mounted sdcard ?
@@ -94,19 +95,18 @@ public class ScriptActivity extends Activity {
 		// set the lauching ui
 		setContentView(R.layout.activity_launching);
 		
-		// set the file path
-		// first check if the user has setting saved
-		File path_settings = new File(Environment.getExternalStorageDirectory().getPath() + 
-				"/kalite_essential/content_settings.py");
-        if(path_settings.exists()){
-        	this.path = mUtilities.readCopyOfSettings(path_settings);
-        	this.path = this.path.replaceAll("\n","");
-        } else {
-        	// if there is no setting saved, use the external storage
-        	this.path = Environment.getExternalStorageDirectory().getPath();
-        }
-		TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-		FileTextView.setText(this.path);
+		startView = (RelativeLayout) findViewById(R.id.startView);
+		retryButton = (Button) findViewById(R.id.buttonStart);
+		spinner = (ProgressBar)findViewById(R.id.progressBar);
+		webProgressBar = (ProgressBar)findViewById(R.id.webProgressBar);
+//		webProgressBar.setVisibility(View.INVISIBLE);
+		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
+		FileTextView = (TextView)findViewById(R.id.FileDirectory);
+		
+		// check internet
+		new InternetCheckAsyncTask().execute();
+				
+		retryButton.setVisibility(View.INVISIBLE);
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
@@ -114,18 +114,50 @@ public class ScriptActivity extends Activity {
     	// first time running
     	if(installNeeded) {
     		// this will also call generate_local_settings after unzip library
+    		spinner.setVisibility(View.INVISIBLE);
   		  	new InstallAsyncTask().execute();
     	}else{
-			runScriptService("start");
+    		contentPath = mUtilities.readContentPath(this);
+        	contentPath = contentPath.replaceAll("\n","");
+    		File contentFiles = new File(contentPath);
+    		if(contentFiles.exists()){
+    			FileTextView.setText("Content Location: " + contentPath);
+    			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
+    			runScriptService("start");
+    		}else{
+    			spinner.setVisibility(View.INVISIBLE);
+    			ServerStatusTextView.setText("Content does not exist");
+      		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+    		}
 		}
 
-		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
-		wv = new WebView(this);
+    	wv = (WebView)findViewById(R.id.webview);
 		WebSettings ws = wv.getSettings();
 		ws.setJavaScriptEnabled(true);
-		wv.setWebChromeClient(new WebChromeClient());
-		wv.setWebViewClient(new WebViewClient());
+		ws.setBuiltInZoomControls(true); //enable zooming in webview
+		ws.setDisplayZoomControls(false); //get rid of the zoom controls
+		wv.setWebChromeClient(new MyWebChromeClient(webProgressBar));
+		wv.setWebViewClient(new WebViewClient(){
+			@Override
+			public void onPageFinished(WebView view, String url){
+				super.onPageFinished(view, url);
+				if(url.equals("http://0.0.0.0:8008/")){
+					startView.setVisibility(View.GONE);
+					wv.setVisibility(View.VISIBLE);
+				}
+			}
+		});
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+		      WebView.setWebContentsDebuggingEnabled(true);
+		}
+//		new PreCacheAsyncTask().execute();
+//		String jquery_mini = "<script src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js' type='text/javascript'></script>";
+//		wv.loadDataWithBaseURL("http://0.0.0.0:8008/", jquery_mini,"text/html","utf-8",null);
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
+		editor = prefs.edit();
+		//clean kalite_command from before, we are not using SharedPreferences in conventional way.
+		editor.clear();
+		editor.commit();
 
 		// new
 		// ExitCodeAsyncTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -133,34 +165,81 @@ public class ScriptActivity extends Activity {
 		prefs_listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			public void onSharedPreferenceChanged(SharedPreferences prefs,
 					String key) {
-				int server_status = prefs.getInt("python_exit_code", -7);
-				String kalite_command = prefs.getString("kalite_command", "no command yet");
-				
-				if (server_status == 0) {  // 0 means the server is running
-					wv.loadUrl("http://0.0.0.0:8008/");
-					setContentView(wv);
-					prefs.unregisterOnSharedPreferenceChangeListener(this);
-				}else if(server_status != 0 && kalite_command.equals("start")){
-					runScriptService("status");
-				}else if(kalite_command.equals("status")){
-					ServerStatusTextView.setText(mUtilities.exitCodeMatch(server_status));
+				if(prefs.getBoolean("from_process", false)){
+					editor.putBoolean("from_process", false);
+					int server_status = prefs.getInt("python_exit_code", -7);
+					String kalite_command = prefs.getString("kalite_command", "no command yet");
+					
+					if (server_status == 0) {  // 0 means the server is running
+						OpenWebViewConditionA = true;
+						openWebViewIfMeetAllConditions();
+					}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
+						runScriptService("status");
+					}else if(kalite_command.equals("status")){
+						ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
+						ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+						spinner.setVisibility(View.INVISIBLE);
+						retryButton.setVisibility(View.VISIBLE);
+					}
 				}
 			}
 		};
 		prefs.registerOnSharedPreferenceChangeListener(prefs_listener);
   }
 	
-// 	@Override
-// 	protected void onStop() {
-// 	    super.onStop();
-//	    prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
-// 	}
+	@Override
+	public void onBackPressed() {
+	    if (wv.canGoBack()) {
+	        wv.goBack();
+	    } else {
+	    	mUtilities.quitDialog(this);
+	    }
+	}
+	
+	public class PreCacheAsyncTask extends AsyncTask<Void, Void, Boolean> {
+		String pre_cache;
+		@Override
+		protected Boolean doInBackground(Void... params) {
+			pre_cache = "<script type='text/javascript'>\n" +
+					mUtilities.readFromAssets(getApplicationContext(), "jquery-ui.min.js") +
+					"\n</script>";
+			return true;
+		}
+		
+		@Override
+		   protected void onPostExecute(Boolean installStatus) {
+		   Log.e(GlobalConstants.LOG_TAG, "elieli Caching: "+pre_cache);
+		   wv.loadDataWithBaseURL("http://0.0.0.0:8008/", pre_cache,"text/html","utf-8",null);
+		}
+	}
+	
+	private void openWebViewIfMeetAllConditions(){
+		if(OpenWebViewConditionA && OpenWebViewConditionB){
+			wv.loadUrl("http://0.0.0.0:8008/");
+//			startView.setVisibility(View.GONE);
+//			webProgressBar.setVisibility(View.VISIBLE);
+//			wv.setVisibility(View.VISIBLE);
+			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
+		}
+	}
 	
 	/**
 	 * When user click start 
 	 * @param view
 	 */
 	public void startServer(View view) {
+		retryButton.setVisibility(View.INVISIBLE);
+		spinner.setVisibility(View.VISIBLE);
+		ServerStatusTextView.setText("Retry to start the server ... ");
+		runScriptService("start");
+	}
+	
+	/**
+	 * When user click heart
+	 * @param view
+	 */
+	public void heart(View view) {
+		//TODO add donate webview
 	}
 	
 	/**
@@ -168,10 +247,12 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void openDirPicker(View view) {
+		Log.e(GlobalConstants.LOG_TAG, "elieli fileBrowser opend");
+		OpenWebViewConditionB = false;
 		Intent intent = new Intent(this, DirectoryPicker.class); 
 		// set options here 
-		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
-		intent.putExtra(DirectoryPicker.ONLY_DIRS,true);
+		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getParentFile().getPath());
+		intent.putExtra(DirectoryPicker.ONLY_DIRS,false);
 		startActivityForResult(intent, DirectoryPicker.PICK_DIRECTORY);
 	}
 	
@@ -180,22 +261,34 @@ public class ScriptActivity extends Activity {
 	 */
 	@Override 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) { 
-		if(requestCode == DirectoryPicker.PICK_DIRECTORY && resultCode == RESULT_OK) { 
-			Bundle extras = data.getExtras(); 
-			String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
-			// do stuff with path
-            if(check_directory(path)){
-            	// if the path is changed
-            	if (this.path != path) {
-            		this.path = path;
-	            	// set the local settings
-					mUtilities.generate_local_settings(path, this);
-					TextView FileTextView = (TextView)findViewById(R.id.FileDirectory);
-					FileTextView.setText(path);
-            	} else {
-            		// TODO: the path is not changed
-            	}
-            }
+		if(requestCode == DirectoryPicker.PICK_DIRECTORY){
+			if(resultCode == RESULT_OK) { 
+				Bundle extras = data.getExtras(); 
+				String path = (String) extras.get(DirectoryPicker.CHOSEN_DIRECTORY); 
+				// do stuff with path
+	            if(check_directory(path)){
+	            	// if the path is changed
+	            	if (contentPath != path) {
+	            		// set the local settings
+	            		mUtilities.setContentPath(path, this);
+						FileTextView.setText("Content location: " + path);
+						FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
+						ServerStatusTextView.setText("Starting server ... ");
+						ServerStatusTextView.setTextColor(Color.parseColor("#005987"));
+						spinner.setVisibility(View.VISIBLE);
+						runScriptService("restart");
+						OpenWebViewConditionB = true;
+	            	} else {
+	            		// TODO: the path is not changed
+	            		OpenWebViewConditionB = true;
+	            		openWebViewIfMeetAllConditions();
+	            	}
+	            }
+			}else{
+				//exit file browser by pressing back buttom
+				OpenWebViewConditionB = true;
+				openWebViewIfMeetAllConditions();
+			}
 		}
 	}
 
@@ -214,8 +307,32 @@ public class ScriptActivity extends Activity {
                 .setMessage("The selected directory doesn't contain the data or content folder")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
+                    	OpenWebViewConditionB = true;
+    					openWebViewIfMeetAllConditions();
                     }
                  })
+                 .setOnCancelListener(new DialogInterface.OnCancelListener() {         
+                	 @Override
+                	 public void onCancel(DialogInterface dialog) {
+                		 OpenWebViewConditionB = true;
+                		 openWebViewIfMeetAllConditions();
+                	 }
+                 })
+                .setOnKeyListener(new DialogInterface.OnKeyListener(){
+					@Override
+					public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+						if (keyCode == KeyEvent.KEYCODE_BACK && 
+			                event.getAction() == KeyEvent.ACTION_UP && 
+			                !event.isCanceled()) {
+							Log.e(GlobalConstants.LOG_TAG, "elieli OnKeyListener dialog");
+			                dialog.cancel();
+			                OpenWebViewConditionB = true;
+	    					openWebViewIfMeetAllConditions();
+			                return true;
+			            }
+						return false;
+					}
+                })
                 .show();
         	return false;
         }
@@ -261,6 +378,24 @@ public class ScriptActivity extends Activity {
 	       }
 	   };
 	   
+	   public class InternetCheckAsyncTask extends AsyncTask<Void, Integer, Boolean> {
+
+			@Override
+			protected Boolean doInBackground(Void... arg0) {
+				return mUtilities.hasInternetAccess(getApplicationContext());
+			}
+			
+			@Override
+			protected void onPostExecute(Boolean internetStatus) {
+				ImageView heart = (ImageView)findViewById(R.id.heart);
+				if (internetStatus) {
+					heart.setVisibility(View.VISIBLE);
+				} else {
+					heart.setVisibility(View.GONE);
+				}
+			}
+		  }
+	   
 	  public class InstallAsyncTask extends AsyncTask<Void, Integer, Boolean> {
 		   @Override
 		   protected void onPreExecute() {
@@ -297,9 +432,9 @@ public class ScriptActivity extends Activity {
 	    	else {
 		    	sendmsg("installFailed", "");
 	    	}
-  		  	mUtilities.generate_local_settings(path, getApplicationContext());
-
-		    runScriptService("start");
+  		  	mUtilities.generate_local_settings(getApplicationContext());
+  		  	ServerStatusTextView.setText("No Content Available");
+  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
 		   }
 	   
 	  }

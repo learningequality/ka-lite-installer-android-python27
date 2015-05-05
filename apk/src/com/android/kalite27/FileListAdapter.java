@@ -49,39 +49,39 @@ public class FileListAdapter extends BaseAdapter {
         fileTitle.setText(fileList.get(i).getName());
         String fileExt = fileExt(fileList.get(i).toString());
         if(fileList.get(i).isDirectory()) {
-        	fileImage.setBackgroundDrawable(mContext.getResources()
+            fileImage.setBackgroundDrawable(mContext.getResources()
                 .getDrawable(R.drawable.ic_folder));
         } else {
-        	if (fileExt != null) {
-        		if (fileExt.equalsIgnoreCase(".doc")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_doc_file));
-        		} else if (fileExt.equalsIgnoreCase(".docx")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_docx_file));
-        		} else if (fileExt.equalsIgnoreCase(".xls")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_xls_file));
-        		} else if (fileExt.equalsIgnoreCase(".xlsx")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_xlsx_file));
-        		} else if (fileExt.equalsIgnoreCase(".xml")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_xml_file));
-        		} else if (fileExt.equalsIgnoreCase(".html")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_html_file));
-        		} else if (fileExt.equalsIgnoreCase(".pdf")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_pdf_file));
-        		} else if (fileExt.equalsIgnoreCase(".txt")) {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_txt_file));
-        		} else {
-        			fileImage.setBackgroundDrawable(mContext.getResources()
-        					.getDrawable(R.drawable.ic_default_file));
-        		}
-        	}
+            if (fileExt != null) {
+                if (fileExt.equalsIgnoreCase(".doc")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_doc_file));
+                } else if (fileExt.equalsIgnoreCase(".docx")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_docx_file));
+                } else if (fileExt.equalsIgnoreCase(".xls")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_xls_file));
+                } else if (fileExt.equalsIgnoreCase(".xlsx")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_xlsx_file));
+                } else if (fileExt.equalsIgnoreCase(".xml")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_xml_file));
+                } else if (fileExt.equalsIgnoreCase(".html")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_html_file));
+                } else if (fileExt.equalsIgnoreCase(".pdf")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_pdf_file));
+                } else if (fileExt.equalsIgnoreCase(".txt")) {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_txt_file));
+                } else {
+                    fileImage.setBackgroundDrawable(mContext.getResources()
+                            .getDrawable(R.drawable.ic_default_file));
+                }
+            }
         }
         return view;
     }

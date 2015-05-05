@@ -147,10 +147,12 @@ public class Process {
         mEndTime = System.currentTimeMillis();
         int pid = mPid.getAndSet(PID_INIT_VALUE);
         //pass python exit code to main activity via singlton GlobalValues(sharepreference)
-        GlobalValues gv = GlobalValues.getInstance();
-        gv.setPythonExitCode(returnValue, mArguments.get(1));
-        
-        Log.d(GlobalConstants.LOG_TAG, "Process " + pid + " exited with result code " + returnValue + ".");
+        String kalite_command = mArguments.get(1);
+        if(!kalite_command.equals("stop")){ //when "stop" command is sent, main activity could have been killed, therefore GloabalValue is gone too.
+          GlobalValues gv = GlobalValues.getInstance();
+          gv.setPythonExitCode(returnValue, kalite_command);
+        }
+        Log.w(GlobalConstants.LOG_TAG, "Process " + pid + " exited with result code " + returnValue +" / "+ kalite_command + ".");
         try {
           mIn.close();
         } catch (IOException e) {
@@ -180,7 +182,7 @@ public class Process {
   public void kill() {
     if (isAlive()) {
       android.os.Process.killProcess(mPid.get());
-      Log.d(GlobalConstants.LOG_TAG, "Killed process " + mPid);
+      Log.e(GlobalConstants.LOG_TAG, "Killed process " + mPid);
     }
   }
 
@@ -193,7 +195,7 @@ public class Process {
   }
 
   public String getSdcardPackageDirectory() {
-	return null;
+  return null;
   }
   
   public String getUptime() {
