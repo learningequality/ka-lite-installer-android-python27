@@ -52,6 +52,7 @@ public class DirectoryPicker extends ListActivity {
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(0,0);
         Bundle extras = getIntent().getExtras();
         dir = Environment.getExternalStorageDirectory();
         if (extras != null) {
@@ -117,11 +118,18 @@ public class DirectoryPicker extends ListActivity {
     	}
     }
 	
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(0,0);
+    }
+    
     private void returnDir(String path) {
     	Intent result = new Intent();
     	result.putExtra(CHOSEN_DIRECTORY, path);
         setResult(RESULT_OK, result);
-    	finish();    	
+    	finish();
+    	overridePendingTransition(0,0);
     }
 
 	public ArrayList<File> filter(File[] file_list, boolean onlyDirs, boolean showHidden) {
