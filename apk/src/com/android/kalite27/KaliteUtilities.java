@@ -6,6 +6,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.AssetManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
@@ -23,9 +25,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+
 import android.app.Activity;
 
 public class KaliteUtilities {
@@ -60,6 +65,32 @@ public class KaliteUtilities {
 			return "Could not determine status (101)";
 		}
 		return "unknown python exit code";
+	}
+	
+	private boolean isNetworkAvailable(Context context) {
+	    ConnectivityManager connectivityManager 
+	          = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+	    NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+	    return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+	}
+	
+	public boolean hasInternetAccess(Context context) {
+	    if (isNetworkAvailable(context)) {
+	        try {
+	            HttpURLConnection urlc = (HttpURLConnection) 
+	                (new URL("https://learningequality.org/give/")
+	                .openConnection());
+	            urlc.setRequestProperty("User-Agent", "Android");
+	            urlc.setRequestProperty("Connection", "close");
+	            // Waiting time
+	            urlc.setConnectTimeout(15000); 
+	            urlc.connect();
+	            return (urlc.getResponseCode() == 200);
+	        } catch (IOException e) {
+	        	e.printStackTrace();
+	        }
+	    }
+	    return false;
 	}
 	
 	public void quitDialog(Context context){

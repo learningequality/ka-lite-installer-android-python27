@@ -12,7 +12,6 @@ import android.os.Environment;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -48,11 +47,12 @@ public class DirectoryPicker extends ListActivity {
 	public static final int PICK_DIRECTORY = 43522432;
 	private File dir;
 	private boolean showHidden = false;
-	private boolean onlyDirs = true ;
+	private boolean onlyDirs = false;
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        overridePendingTransition(0,0);
         Bundle extras = getIntent().getExtras();
         dir = Environment.getExternalStorageDirectory();
         if (extras != null) {
@@ -70,10 +70,10 @@ public class DirectoryPicker extends ListActivity {
         setContentView(R.layout.chooser_list);
         setTitle(dir.getAbsolutePath());
         Button btnChoose = (Button) findViewById(R.id.btnChoose);
-        String name = dir.getName();
+        /*String name = dir.getName();
         if(name.length() == 0)
         	name = "/";
-        btnChoose.setText("Choose " + "'" + name + "'");
+        btnChoose.setText("Choose " + "'" + name + "'");*/
         btnChoose.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
             	returnDir(dir.getAbsolutePath());
@@ -92,8 +92,7 @@ public class DirectoryPicker extends ListActivity {
         }
         
         final ArrayList<File> files = filter(dir.listFiles(), onlyDirs, showHidden);
-        String[] names = names(files);
-        setListAdapter(new ArrayAdapter<String>(this, R.layout.list_item, names));        	
+        setListAdapter(new FileListAdapter(this, files));        	
         
 
         lv.setOnItemClickListener(new OnItemClickListener() {
@@ -119,11 +118,18 @@ public class DirectoryPicker extends ListActivity {
     	}
     }
 	
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(0,0);
+    }
+    
     private void returnDir(String path) {
     	Intent result = new Intent();
     	result.putExtra(CHOSEN_DIRECTORY, path);
         setResult(RESULT_OK, result);
-    	finish();    	
+    	finish();
+    	overridePendingTransition(0,0);
     }
 
 	public ArrayList<File> filter(File[] file_list, boolean onlyDirs, boolean showHidden) {
