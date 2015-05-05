@@ -55,6 +55,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -104,6 +105,9 @@ public class ScriptActivity extends Activity {
 //		webProgressBar.setVisibility(View.INVISIBLE);
 		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
 		FileTextView = (TextView)findViewById(R.id.FileDirectory);
+		
+		// check internet
+		new InternetCheckAsyncTask().execute();
 		
 		retryButton.setVisibility(View.INVISIBLE);
 		
@@ -231,6 +235,14 @@ public class ScriptActivity extends Activity {
 		spinner.setVisibility(View.VISIBLE);
 		ServerStatusTextView.setText("Retry to start the server ... ");
 		runScriptService("start");
+	}
+	
+	/**
+	 * When user click heart
+	 * @param view
+	 */
+	public void heart(View view) {
+		//TODO add donate webview
 	}
 	
 	/**
@@ -368,6 +380,24 @@ public class ScriptActivity extends Activity {
 			    }
 	       }
 	   };
+	   
+	  public class InternetCheckAsyncTask extends AsyncTask<Void, Integer, Boolean> {
+
+		@Override
+		protected Boolean doInBackground(Void... arg0) {
+			return mUtilities.hasInternetAccess(getApplicationContext());
+		}
+		
+		@Override
+		protected void onPostExecute(Boolean internetStatus) {
+			ImageView heart = (ImageView)findViewById(R.id.heart);
+			if (internetStatus) {
+				heart.setVisibility(View.VISIBLE);
+			} else {
+				heart.setVisibility(View.GONE);
+			}
+		}
+	  }
 	   
 	  public class InstallAsyncTask extends AsyncTask<Void, Integer, Boolean> {
 		   @Override
