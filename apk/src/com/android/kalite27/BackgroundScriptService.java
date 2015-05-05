@@ -65,7 +65,7 @@ public class BackgroundScriptService extends Service {
 	public void onTaskRemoved(Intent rootIntent) {
 		Log.e(GlobalConstants.LOG_TAG, "onTaskRemoved elieli is called.");
 		stopMyMain();
-		try { Thread.sleep(30000); }
+		try { Thread.sleep(30000); } //give enough time to stop kalite when app is swipe killed
 	    catch (InterruptedException e) { e.printStackTrace(); }
 	}
     
