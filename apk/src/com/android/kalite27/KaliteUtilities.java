@@ -30,7 +30,6 @@ import java.net.URL;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-
 import android.app.Activity;
 
 public class KaliteUtilities {

@@ -52,6 +52,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -102,6 +103,9 @@ public class ScriptActivity extends Activity {
 		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
 		FileTextView = (TextView)findViewById(R.id.FileDirectory);
 		
+		// check internet
+		new InternetCheckAsyncTask().execute();
+				
 		retryButton.setVisibility(View.INVISIBLE);
 		
 		// install needed ?
@@ -231,6 +235,14 @@ public class ScriptActivity extends Activity {
 	}
 	
 	/**
+	 * When user click heart
+	 * @param view
+	 */
+	public void heart(View view) {
+		//TODO add donate webview
+	}
+	
+	/**
 	 * When user click file browser
 	 * @param view
 	 */
@@ -239,8 +251,8 @@ public class ScriptActivity extends Activity {
 		OpenWebViewConditionB = false;
 		Intent intent = new Intent(this, DirectoryPicker.class); 
 		// set options here 
-		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getPath());
-		intent.putExtra(DirectoryPicker.ONLY_DIRS,true);
+		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getParentFile().getPath());
+		intent.putExtra(DirectoryPicker.ONLY_DIRS,false);
 		startActivityForResult(intent, DirectoryPicker.PICK_DIRECTORY);
 	}
 	
@@ -365,6 +377,24 @@ public class ScriptActivity extends Activity {
 			    }
 	       }
 	   };
+	   
+	   public class InternetCheckAsyncTask extends AsyncTask<Void, Integer, Boolean> {
+
+			@Override
+			protected Boolean doInBackground(Void... arg0) {
+				return mUtilities.hasInternetAccess(getApplicationContext());
+			}
+			
+			@Override
+			protected void onPostExecute(Boolean internetStatus) {
+				ImageView heart = (ImageView)findViewById(R.id.heart);
+				if (internetStatus) {
+					heart.setVisibility(View.VISIBLE);
+				} else {
+					heart.setVisibility(View.GONE);
+				}
+			}
+		  }
 	   
 	  public class InstallAsyncTask extends AsyncTask<Void, Integer, Boolean> {
 		   @Override

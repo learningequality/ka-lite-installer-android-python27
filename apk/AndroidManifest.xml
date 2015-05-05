@@ -47,14 +47,13 @@
 
         <activity
             android:name="com.googlecode.android_scripting.activity.FutureActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboardHidden|orientation"
             android:theme="@android:style/Theme.Translucent" />
         <activity
             android:name=".DialogActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboardHidden|orientation"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
         <activity
-            android:configChanges="orientation|screenSize"
             android:name=".RpcServerLauncher"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Translucent.NoTitleBar" >
@@ -65,9 +64,7 @@
             </intent-filter>
         </activity>
         
-        <activity 
-            android:configChanges="orientation|screenSize"
-            android:name=".DirectoryPicker" />
+        <activity android:name=".DirectoryPicker" />
     </application>
 
     <supports-screens android:xlargeScreens="true" />

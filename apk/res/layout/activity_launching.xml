@@ -27,14 +27,17 @@
             
             <ImageView
                 android:id="@+id/heart"
+                android:layout_alignParentRight="true"
+                android:paddingRight="-70dp"
+                android:paddingLeft="-70dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_toRightOf="@id/logo"
-                android:layout_marginLeft="10dp"
+                android:layout_alignBottom="@+id/logo"
+                android:layout_alignTop="@+id/logo"
                 android:src="@drawable/heart"
                 android:visibility="gone"
                 android:onClick="heart"
-            	android:clickable="true" />
+                android:clickable="true" />
        
         </RelativeLayout>
     
