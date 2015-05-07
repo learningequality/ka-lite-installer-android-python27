@@ -79,6 +79,8 @@ public class KaliteUtilities {
 	            HttpURLConnection urlc = (HttpURLConnection) 
 	                (new URL("https://learningequality.org/give/")
 	                .openConnection());
+	            urlc.setRequestMethod("HEAD");
+	            urlc.setRequestProperty( "Accept-Encoding", "" );
 	            urlc.setRequestProperty("User-Agent", "Android");
 	            urlc.setRequestProperty("Connection", "close");
 	            // Waiting time
