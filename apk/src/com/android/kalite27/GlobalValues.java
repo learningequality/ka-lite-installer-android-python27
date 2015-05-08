@@ -47,6 +47,7 @@ public class GlobalValues {
         editor = prefs.edit();
         editor.putInt("python_exit_code", code);
         editor.putString("kalite_command", command);
+        editor.putBoolean("from_process", true);
         editor.commit();
         Log.d(GlobalConstants.LOG_TAG, "elielieli: GlobalValues "+ python_exit_code);
     }
