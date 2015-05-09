@@ -143,8 +143,8 @@ public class ScriptActivity extends Activity {
 			@Override
 			public void onPageFinished(WebView view, String url){
 				super.onPageFinished(view, url);
-				wv.clearHistory();
 				if(url.equals("http://0.0.0.0:8008/")){
+					wv.clearHistory();
 					startView.setVisibility(View.GONE);
 					wv.setVisibility(View.VISIBLE);
 				}
