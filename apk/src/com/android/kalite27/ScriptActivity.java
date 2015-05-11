@@ -76,6 +76,7 @@ public class ScriptActivity extends Activity {
 	private boolean OpenWebViewConditionA = false;
 	private boolean OpenWebViewConditionB = true;
 	private boolean OpenWebViewConditionC = true;
+	private boolean KaLitewvOpen = false;
 	private boolean HeartwvOpen = false;
 	GlobalValues gv;
 	  
@@ -144,9 +145,14 @@ public class ScriptActivity extends Activity {
 			public void onPageFinished(WebView view, String url){
 				super.onPageFinished(view, url);
 				if(url.equals("http://0.0.0.0:8008/")){
-					wv.clearHistory();
+					if (!KaLitewvOpen) {
+						KaLitewvOpen = true;
+						wv.clearHistory();
+					}
 					startView.setVisibility(View.GONE);
 					wv.setVisibility(View.VISIBLE);
+				} else if (!KaLitewvOpen) {
+					wv.clearHistory();
 				}
 			}
 		});
@@ -202,6 +208,8 @@ public class ScriptActivity extends Activity {
 	    		wv.clearHistory();
 	    		webProgressBar.setVisibility(View.GONE);
 	    		wv.setVisibility(View.GONE);
+	    		KaLitewvOpen = false;
+	    		openWebViewIfMeetAllConditions();
 	    	} else {
 	    		mUtilities.quitDialog(this);
 	    	}
