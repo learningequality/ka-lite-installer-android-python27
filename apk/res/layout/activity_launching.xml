@@ -36,7 +36,7 @@
                 android:layout_alignTop="@+id/logo"
                 android:src="@drawable/heart"
                 android:visibility="gone"
-                android:onClick="heart"
+                android:onClick="clickOnHeart"
                 android:clickable="true" />
        
         </RelativeLayout>
