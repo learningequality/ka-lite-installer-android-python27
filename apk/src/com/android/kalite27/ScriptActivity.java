@@ -41,16 +41,18 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
 import android.view.View;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
+
+import org.xwalk.core.XWalkNavigationHistory;
+import org.xwalk.core.XWalkResourceClient;
+import org.xwalk.core.XWalkView;
+import org.xwalk.core.XWalkPreferences;
+
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -67,17 +69,16 @@ public class ScriptActivity extends Activity {
 	private RelativeLayout startView;
 	private TextView ServerStatusTextView;
 	private TextView FileTextView;
-	private WebView wv;
+	private XWalkView wv;
 	private String contentPath;
 	private KaliteUtilities mUtilities;
 	private Button retryButton;
 	private ProgressBar spinner;
 	private ProgressBar webProgressBar;
-	private boolean OpenWebViewConditionA = false;
-	private boolean OpenWebViewConditionB = true;
-	private boolean OpenWebViewConditionC = true;
-	private boolean KaLitewvOpen = false;
-	private boolean HeartwvOpen = false;
+	private boolean isServerRunning = false;
+	private boolean isFileBrowserClosed = true;
+	private boolean isHeartViewClosed = true;
+//	private boolean KaLitewvOpen = false;
 	GlobalValues gv;
 	  
 	@SuppressLint("NewApi") @Override
@@ -102,7 +103,6 @@ public class ScriptActivity extends Activity {
 		retryButton = (Button) findViewById(R.id.buttonStart);
 		spinner = (ProgressBar)findViewById(R.id.progressBar);
 		webProgressBar = (ProgressBar)findViewById(R.id.webProgressBar);
-//		webProgressBar.setVisibility(View.INVISIBLE);
 		ServerStatusTextView = (TextView)findViewById(R.id.ServerStatus);
 		FileTextView = (TextView)findViewById(R.id.FileDirectory);
 		
@@ -134,42 +134,39 @@ public class ScriptActivity extends Activity {
     		}
 		}
 
-    	wv = (WebView)findViewById(R.id.webview);
-		WebSettings ws = wv.getSettings();
-		ws.setJavaScriptEnabled(true);
-		ws.setBuiltInZoomControls(true); //enable zooming in webview
-		ws.setDisplayZoomControls(false); //get rid of the zoom controls
-		wv.setWebChromeClient(new MyWebChromeClient(webProgressBar));
-		wv.setWebViewClient(new WebViewClient(){
+    	wv = (XWalkView)findViewById(R.id.webview);
+    	wv.setVisibility(View.INVISIBLE);
+		wv.setResourceClient(new XWalkResourceClient(wv){
 			@Override
-			public void onPageFinished(WebView view, String url){
-				super.onPageFinished(view, url);
+			public void onLoadFinished(XWalkView view, String url){
+				super.onLoadFinished(view, url);
 				if(url.equals("http://0.0.0.0:8008/")){
-					if (!KaLitewvOpen) {
-						KaLitewvOpen = true;
-						wv.clearHistory();
-					}
 					startView.setVisibility(View.GONE);
-					wv.setVisibility(View.VISIBLE);
-				} else if (!KaLitewvOpen) {
-					wv.clearHistory();
+					view.setVisibility(View.VISIBLE);
+				} else if (!isServerRunning) {
+					view.getNavigationHistory().clear();
 				}
 			}
+			
+			@Override
+			public void onProgressChanged(XWalkView view, int progress) {
+				webProgressBar.setVisibility(View.VISIBLE);
+				webProgressBar.setProgress(progress);
+
+				if(progress == 100){
+					webProgressBar.setVisibility(View.GONE);
+		        }
+			}
 		});
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-		      WebView.setWebContentsDebuggingEnabled(true);
-		}
+		
+		XWalkPreferences.setValue(XWalkPreferences.REMOTE_DEBUGGING, true);
+				
 //		new PreCacheAsyncTask().execute();
-//		String jquery_mini = "<script src='http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js' type='text/javascript'></script>";
-//		wv.loadDataWithBaseURL("http://0.0.0.0:8008/", jquery_mini,"text/html","utf-8",null);
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
 		editor = prefs.edit();
 		//clean kalite_command from before, we are not using SharedPreferences in conventional way.
 		editor.clear();
 		editor.commit();
-
-		// new
-		// ExitCodeAsyncTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
 		prefs_listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			public void onSharedPreferenceChanged(SharedPreferences prefs,
@@ -180,8 +177,8 @@ public class ScriptActivity extends Activity {
 					String kalite_command = prefs.getString("kalite_command", "no command yet");
 					
 					if (server_status == 0) {  // 0 means the server is running
-						OpenWebViewConditionA = true;
-						openWebViewIfMeetAllConditions();
+						isServerRunning = true;
+						openWebViewIfAllConditionsMeet();
 					}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
 						runScriptService("status");
 					}else if(kalite_command.equals("status")){
@@ -198,24 +195,22 @@ public class ScriptActivity extends Activity {
 	
 	@Override
 	public void onBackPressed() {
-	    if (wv.canGoBack()) {
-	        wv.goBack();
+	    if (wv.getNavigationHistory().canGoBack()) {
+	        wv.getNavigationHistory().navigate(XWalkNavigationHistory.Direction.BACKWARD, 1);
 	    } else {
-	    	if (HeartwvOpen) {
-	    		HeartwvOpen = false;
-	    		OpenWebViewConditionC = true;
-	    		wv.loadUrl("about:blank");
-	    		wv.clearHistory();
+	    	if (!isHeartViewClosed) {
+	    		isHeartViewClosed = true;
+	    		wv.load("about:blank", null);
+	    		wv.getNavigationHistory().clear();
 	    		webProgressBar.setVisibility(View.GONE);
 	    		wv.setVisibility(View.GONE);
-	    		KaLitewvOpen = false;
-	    		openWebViewIfMeetAllConditions();
+	    		openWebViewIfAllConditionsMeet();
 	    	} else {
 	    		mUtilities.quitDialog(this);
 	    	}
 	    }
 	}
-	
+	/***
 	public class PreCacheAsyncTask extends AsyncTask<Void, Void, Boolean> {
 		String pre_cache;
 		@Override
@@ -233,14 +228,13 @@ public class ScriptActivity extends Activity {
 		   wv.clearHistory();
 		}
 	}
-	
-	private void openWebViewIfMeetAllConditions(){
-		if(OpenWebViewConditionA && OpenWebViewConditionB && OpenWebViewConditionC){
-			wv.loadUrl("http://0.0.0.0:8008/");
-			wv.clearHistory();
-			//startView.setVisibility(View.GONE);
-			//webProgressBar.setVisibility(View.VISIBLE);
-			//wv.setVisibility(View.VISIBLE);
+	***/
+	private void openWebViewIfAllConditionsMeet(){
+		if(isServerRunning && isFileBrowserClosed && isHeartViewClosed){
+//			startView.setVisibility(View.GONE);
+//			wv.setVisibility(View.VISIBLE);
+			wv.load("http://0.0.0.0:8008/", null);
+			wv.getNavigationHistory().clear();
 			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 		}
 	}
@@ -261,13 +255,10 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void clickOnHeart(View view) {
-		OpenWebViewConditionC = false;
-		HeartwvOpen = true;
-		wv.loadUrl("https://learningequality.org/give/");
-		wv.clearHistory();
-		webProgressBar.setVisibility(View.VISIBLE);
+		isHeartViewClosed = false;
 		wv.setVisibility(View.VISIBLE);
-		//TODO add donate webview
+		wv.load("https://learningequality.org/give/", null);
+		wv.getNavigationHistory().clear();
 	}
 	
 	/**
@@ -276,7 +267,7 @@ public class ScriptActivity extends Activity {
 	 */
 	public void openDirPicker(View view) {
 		Log.e(GlobalConstants.LOG_TAG, "elieli fileBrowser opend");
-		OpenWebViewConditionB = false;
+		isFileBrowserClosed = false;
 		Intent intent = new Intent(this, DirectoryPicker.class); 
 		// set options here 
 		intent.putExtra(DirectoryPicker.START_DIR,Environment.getExternalStorageDirectory().getParentFile().getPath());
@@ -305,17 +296,17 @@ public class ScriptActivity extends Activity {
 						ServerStatusTextView.setTextColor(Color.parseColor("#005987"));
 						spinner.setVisibility(View.VISIBLE);
 						runScriptService("restart");
-						OpenWebViewConditionB = true;
+						isFileBrowserClosed = true;
 	            	} else {
 	            		// TODO: the path is not changed
-	            		OpenWebViewConditionB = true;
-	            		openWebViewIfMeetAllConditions();
+	            		isFileBrowserClosed = true;
+	            		openWebViewIfAllConditionsMeet();
 	            	}
 	            }
 			}else{
 				//exit file browser by pressing back buttom
-				OpenWebViewConditionB = true;
-				openWebViewIfMeetAllConditions();
+				isFileBrowserClosed = true;
+				openWebViewIfAllConditionsMeet();
 			}
 		}
 	}
@@ -335,15 +326,15 @@ public class ScriptActivity extends Activity {
                 .setMessage("The selected directory doesn't contain the data or content folder")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
-                    	OpenWebViewConditionB = true;
-    					openWebViewIfMeetAllConditions();
+                    	isFileBrowserClosed = true;
+                    	openWebViewIfAllConditionsMeet();
                     }
                  })
                  .setOnCancelListener(new DialogInterface.OnCancelListener() {         
                 	 @Override
                 	 public void onCancel(DialogInterface dialog) {
-                		 OpenWebViewConditionB = true;
-                		 openWebViewIfMeetAllConditions();
+                		 isFileBrowserClosed = true;
+                		 openWebViewIfAllConditionsMeet();
                 	 }
                  })
                 .setOnKeyListener(new DialogInterface.OnKeyListener(){
@@ -354,8 +345,8 @@ public class ScriptActivity extends Activity {
 			                !event.isCanceled()) {
 							Log.e(GlobalConstants.LOG_TAG, "elieli OnKeyListener dialog");
 			                dialog.cancel();
-			                OpenWebViewConditionB = true;
-	    					openWebViewIfMeetAllConditions();
+			                isFileBrowserClosed = true;
+			                openWebViewIfAllConditionsMeet();
 			                return true;
 			            }
 						return false;
@@ -545,10 +536,31 @@ public class ScriptActivity extends Activity {
 
 	  //finish();
   }
+  
+  @Override
+  protected void onPause() {
+      super.onPause();
+      if (wv != null) {
+          wv.pauseTimers();
+          wv.onHide();
+      }
+  }
+
+  @Override
+  protected void onResume() {
+      super.onResume();
+      if (wv != null) {
+          wv.resumeTimers();
+          wv.onShow();
+      }
+  }
 
   	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		if (wv != null) {
+            wv.onDestroy();
+        }
 		Log.e(GlobalConstants.LOG_TAG, "main activity onDestroy is called elieli");
 		runScriptService("stop");
 	}

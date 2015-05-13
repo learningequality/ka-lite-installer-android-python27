@@ -11,10 +11,6 @@ import android.net.NetworkInfo;
 import android.os.Environment;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
-import android.widget.ProgressBar;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -159,7 +155,6 @@ public class KaliteUtilities {
 	        	RSA = generateRSA();
 	        }
 	        			
-	        String content_root_khan = null;
             String content_root = null;
             String content_data = null;
             
@@ -167,8 +162,6 @@ public class KaliteUtilities {
             String local_settings_destination = context.getFilesDir().getAbsolutePath() + local_settings_path;
             String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
             
-            content_root_khan = "\nCONTENT_ROOT_KHAN = \"" + Environment.getExternalStorageDirectory().getPath()
-            		+ "/com.android.kalite27/extras/khan\"";
             content_root = "\nCONTENT_ROOT = \"content root not specified yet\"";
             content_data = "\nCONTENT_DATA_PATH = \"content data not specified yet\"";
             
@@ -180,11 +173,9 @@ public class KaliteUtilities {
 //            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
             "\nPDFJS = False" +
             database_path +
-            content_root_khan +
             content_root +
             content_data +
             "\nDEBUG = True" +
-//            "\nTARGET_OS = \"Android\"" +
             "\nUSE_I18N = False" +
             "\nUSE_L10N = False" +
             "\n" + RSA;
@@ -390,21 +381,5 @@ public class KaliteUtilities {
 		} catch(Exception e) {
 			System.out.println("Failed to create a local copy");
 		}
-	}
-}
-
-class MyWebChromeClient extends WebChromeClient{
-	ProgressBar progressBar;
-	public MyWebChromeClient(ProgressBar pb){
-		progressBar = pb;
-	}
-	@Override
-	public void onProgressChanged(WebView view, int progress) {
-		progressBar.setVisibility(View.VISIBLE);
-    	progressBar.setProgress(progress);
-
-		if(progress == 100){
-			progressBar.setVisibility(View.GONE);
-        }
 	}
 }

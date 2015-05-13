@@ -138,10 +138,10 @@
         
     </RelativeLayout>
     
-    <WebView android:id="@+id/webview"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+    <org.xwalk.core.XWalkView android:id="@+id/webview"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+    </org.xwalk.core.XWalkView>
     
     <ProgressBar android:id="@+id/webProgressBar"
         style="?android:attr/progressBarStyleHorizontal"
