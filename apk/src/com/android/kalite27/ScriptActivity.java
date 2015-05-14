@@ -78,7 +78,7 @@ public class ScriptActivity extends Activity {
 	private boolean isServerRunning = false;
 	private boolean isFileBrowserClosed = true;
 	private boolean isHeartViewClosed = true;
-//	private boolean KaLitewvOpen = false;
+	private boolean isHomePageFirstTime = true;
 	GlobalValues gv;
 	  
 	@SuppressLint("NewApi") @Override
@@ -138,23 +138,32 @@ public class ScriptActivity extends Activity {
     	wv.setVisibility(View.INVISIBLE);
 		wv.setResourceClient(new XWalkResourceClient(wv){
 			@Override
+			public void onLoadStarted(XWalkView view, String url){
+				super.onLoadStarted(view, url);
+				if(!isHomePageFirstTime) {
+					webProgressBar.setVisibility(View.VISIBLE);
+				}
+				if(!isHeartViewClosed){
+					webProgressBar.setVisibility(View.VISIBLE);
+					wv.getNavigationHistory().clear();
+				}
+			}
+			@Override
 			public void onLoadFinished(XWalkView view, String url){
 				super.onLoadFinished(view, url);
-				if(url.equals("http://0.0.0.0:8008/")){
+				if(url.equals("http://0.0.0.0:8008/") && isHomePageFirstTime){
+					isHomePageFirstTime = false;
 					startView.setVisibility(View.GONE);
 					view.setVisibility(View.VISIBLE);
-				} else if (!isServerRunning) {
 					view.getNavigationHistory().clear();
 				}
 			}
 			
 			@Override
 			public void onProgressChanged(XWalkView view, int progress) {
-				webProgressBar.setVisibility(View.VISIBLE);
 				webProgressBar.setProgress(progress);
-
 				if(progress == 100){
-					webProgressBar.setVisibility(View.GONE);
+					webProgressBar.setVisibility(View.INVISIBLE);
 		        }
 			}
 		});
@@ -201,9 +210,8 @@ public class ScriptActivity extends Activity {
 	    	if (!isHeartViewClosed) {
 	    		isHeartViewClosed = true;
 	    		wv.load("about:blank", null);
-	    		wv.getNavigationHistory().clear();
-	    		webProgressBar.setVisibility(View.GONE);
-	    		wv.setVisibility(View.GONE);
+	    		webProgressBar.setVisibility(View.INVISIBLE);
+	    		wv.setVisibility(View.INVISIBLE);
 	    		openWebViewIfAllConditionsMeet();
 	    	} else {
 	    		mUtilities.quitDialog(this);
@@ -231,10 +239,7 @@ public class ScriptActivity extends Activity {
 	***/
 	private void openWebViewIfAllConditionsMeet(){
 		if(isServerRunning && isFileBrowserClosed && isHeartViewClosed){
-//			startView.setVisibility(View.GONE);
-//			wv.setVisibility(View.VISIBLE);
 			wv.load("http://0.0.0.0:8008/", null);
-			wv.getNavigationHistory().clear();
 			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 		}
 	}
@@ -258,7 +263,6 @@ public class ScriptActivity extends Activity {
 		isHeartViewClosed = false;
 		wv.setVisibility(View.VISIBLE);
 		wv.load("https://learningequality.org/give/", null);
-		wv.getNavigationHistory().clear();
 	}
 	
 	/**
@@ -422,7 +426,7 @@ public class ScriptActivity extends Activity {
 	
 		   @Override
 		   protected Boolean doInBackground(Void... params) {	    
-	    	Log.i(GlobalConstants.LOG_TAG, "Installing...");
+	    	Log.i(GlobalConstants.LOG_TAG, "Unpacking...");
 
 	    	// show progress dialog
 	    	sendmsg("showProgressDialog", "");
