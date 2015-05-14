@@ -168,6 +168,9 @@ public class ScriptActivity extends Activity {
 			}
 		});
 		
+		/*
+		 * !!! remember to comment out REMOTE_DEBUGGING in production, it causes error message overflow
+		 */
 		XWalkPreferences.setValue(XWalkPreferences.REMOTE_DEBUGGING, true);
 				
 //		new PreCacheAsyncTask().execute();
