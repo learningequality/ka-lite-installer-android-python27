@@ -28,6 +28,10 @@ import com.googlecode.android_scripting.FileUtils;
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.lang.NoSuchMethodException;
+import java.lang.IllegalAccessException;
+import java.lang.reflect.InvocationTargetException;
 
 import android.util.Log;
 import android.annotation.SuppressLint;
@@ -52,6 +56,8 @@ import org.xwalk.core.XWalkNavigationHistory;
 import org.xwalk.core.XWalkResourceClient;
 import org.xwalk.core.XWalkView;
 import org.xwalk.core.XWalkPreferences;
+import org.xwalk.core.internal.XWalkSettings;
+import org.xwalk.core.internal.XWalkViewBridge;
 
 import android.widget.Button;
 import android.widget.ImageView;
@@ -136,21 +142,20 @@ public class ScriptActivity extends Activity {
 
     	wv = (XWalkView)findViewById(R.id.webview);
     	wv.setVisibility(View.INVISIBLE);
+    	wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 		wv.setResourceClient(new XWalkResourceClient(wv){
 			@Override
 			public void onLoadStarted(XWalkView view, String url){
 				super.onLoadStarted(view, url);
-				if(!isHomePageFirstTime) {
-					webProgressBar.setVisibility(View.VISIBLE);
-				}
 				if(!isHeartViewClosed){
-					webProgressBar.setVisibility(View.VISIBLE);
 					wv.getNavigationHistory().clear();
 				}
 			}
+			
 			@Override
 			public void onLoadFinished(XWalkView view, String url){
 				super.onLoadFinished(view, url);
+				webProgressBar.setVisibility(View.INVISIBLE);
 				if(url.equals("http://0.0.0.0:8008/") && isHomePageFirstTime){
 					isHomePageFirstTime = false;
 					startView.setVisibility(View.GONE);
@@ -162,17 +167,34 @@ public class ScriptActivity extends Activity {
 			@Override
 			public void onProgressChanged(XWalkView view, int progress) {
 				webProgressBar.setProgress(progress);
-				if(progress == 100){
-					webProgressBar.setVisibility(View.INVISIBLE);
+				if(progress > 99){
+					webProgressBar.setProgress(0);
 		        }
+			}
+			
+			@Override
+			public boolean shouldOverrideUrlLoading(XWalkView view, String url){
+				if(!isHomePageFirstTime) {
+					webProgressBar.setVisibility(View.VISIBLE);
+				}
+				if(!isHeartViewClosed){
+					webProgressBar.setVisibility(View.VISIBLE);
+					wv.getNavigationHistory().clear();
+				}
+				return false;
 			}
 		});
 		
+//		XWalkPreferences.setValue("enable-javascript", true);
+//		XWalkPreferences.setValue(XWalkPreferences.JAVASCRIPT_CAN_OPEN_WINDOW, true);
+		XWalkPreferences.setValue(XWalkPreferences.SUPPORT_MULTIPLE_WINDOWS, false);
 		/*
-		 * !!! remember to comment out REMOTE_DEBUGGING in production, it causes error message overflow
+		 * !!! remember to disable REMOTE_DEBUGGING in production, it causes error message overflow
 		 */
-		XWalkPreferences.setValue(XWalkPreferences.REMOTE_DEBUGGING, true);
-				
+		if(GlobalConstants.IS_REMOTE_DEBUGGING){
+			XWalkPreferences.setValue(XWalkPreferences.REMOTE_DEBUGGING, true);
+		}
+		
 //		new PreCacheAsyncTask().execute();
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
 		editor = prefs.edit();
@@ -204,6 +226,29 @@ public class ScriptActivity extends Activity {
 		};
 		prefs.registerOnSharedPreferenceChangeListener(prefs_listener);
   }
+	
+	/*
+	 * To make Stripe checkout work properly, we need to change the User Agent for our webview, because
+	 * Stripe use it to define its behaviors.
+	 * Crosswalk 10 don't support setUserAgentString, so we use Reflection to modify the User Agent.
+	 */
+	private void setWebViewUserAgent(XWalkView webView, String userAgent){
+	    try{
+	        Method ___getBridge = XWalkView.class.getDeclaredMethod("getBridge");
+	        ___getBridge.setAccessible(true);
+	        XWalkViewBridge xWalkViewBridge = null;
+	        xWalkViewBridge = (XWalkViewBridge)___getBridge.invoke(webView);
+	        XWalkSettings xWalkSettings = xWalkViewBridge.getSettings();
+	        xWalkSettings.setUserAgentString(userAgent);
+	    }catch (NoSuchMethodException e){
+	        // Could not set user agent
+	        e.printStackTrace();
+	    }catch (IllegalAccessException e){
+	        e.printStackTrace();
+	    }catch (InvocationTargetException e){
+	    	e.printStackTrace();
+	    }
+	}
 	
 	@Override
 	public void onBackPressed() {
@@ -263,6 +308,12 @@ public class ScriptActivity extends Activity {
 	 * @param view
 	 */
 	public void clickOnHeart(View view) {
+		/*
+		 * here we pretend our webview is a desktop Chrome
+		 */
+		String userAgent = "Chrome/42.0.2311.90";
+		setWebViewUserAgent(wv, userAgent);
+		
 		isHeartViewClosed = false;
 		wv.setVisibility(View.VISIBLE);
 		wv.load("https://learningequality.org/give/", null);
