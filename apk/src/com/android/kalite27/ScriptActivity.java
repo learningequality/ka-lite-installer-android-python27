@@ -22,6 +22,9 @@
 
 package com.android.kalite27;
 
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.ViewPager;
+
 import com.android.kalite27.config.GlobalConstants;
 import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
@@ -38,6 +41,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -50,7 +54,10 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 
 import org.xwalk.core.XWalkNavigationHistory;
 import org.xwalk.core.XWalkResourceClient;
@@ -85,6 +92,10 @@ public class ScriptActivity extends Activity {
 	private boolean isFileBrowserClosed = true;
 	private boolean isHeartViewClosed = true;
 	private boolean isHomePageFirstTime = true;
+	private ViewPager mViewPager;
+	private static final int MAX_VIEWS = 5;
+	private boolean isGuideClosed = false;
+	private String installMessage = "";
 	GlobalValues gv;
 	  
 	@SuppressLint("NewApi") @Override
@@ -119,11 +130,16 @@ public class ScriptActivity extends Activity {
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
-		
+    	
     	// first time running
     	if(installNeeded) {
     		// this will also call generate_local_settings after unzip library
     		spinner.setVisibility(View.INVISIBLE);
+    		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+    		mViewPager.setVisibility(View.VISIBLE);
+    		isGuideClosed = false;
+            mViewPager.setAdapter(new GuidePagerAdapter());
+            mViewPager.setOnPageChangeListener(new GuidePageChangeListener());
   		  	new InstallAsyncTask().execute();
     	}else{
     		contentPath = mUtilities.readContentPath(this);
@@ -481,11 +497,15 @@ public class ScriptActivity extends Activity {
 		   @Override
 		   protected Boolean doInBackground(Void... params) {	    
 	    	Log.i(GlobalConstants.LOG_TAG, "Unpacking...");
-
+	    	
 	    	// show progress dialog
-	    	sendmsg("showProgressDialog", "");
+	    	if (isGuideClosed){
+	    		sendmsg("showProgressDialog", "");
 
-	    	sendmsg("setMessageProgressDialog", "Please wait...");
+	    		sendmsg("setMessageProgressDialog", "Please wait...");
+	    	} else {
+	    		installMessage = "setMessageProgressDialog";
+	    	}
 	    	createOurExternalStorageRootDir();
 	
 			// Copy all resources
@@ -501,14 +521,23 @@ public class ScriptActivity extends Activity {
 	
 		   @Override
 		   protected void onPostExecute(Boolean installStatus) {
-	    	sendmsg("dismissProgressDialog", "");
-	    	
-	    	if(installStatus) {
-		    	sendmsg("installSucceed", "");
-	    	}
-	    	else {
-		    	sendmsg("installFailed", "");
-	    	}
+			if (isGuideClosed) {
+		    	sendmsg("dismissProgressDialog", "");
+		    	
+		    	if(installStatus) {
+			    	sendmsg("installSucceed", "");
+		    	}
+		    	else {
+			    	sendmsg("installFailed", "");
+		    	}
+			} else {
+				if(installStatus) {
+			    	installMessage = "installSucceed";
+		    	}
+		    	else {
+		    		installMessage = "installFailed";
+		    	} 
+			}
   		  	mUtilities.generate_local_settings(getApplicationContext());
   		  	ServerStatusTextView.setText("No Content Available");
   		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
@@ -623,4 +652,87 @@ public class ScriptActivity extends Activity {
 		runScriptService("stop");
 	}
   
+  	class GuidePagerAdapter extends PagerAdapter {
+
+        @Override
+        public int getCount() {
+            return MAX_VIEWS+1;
+        }
+
+        @Override
+        public boolean isViewFromObject(View view, Object object) {
+            return view == (View) object;
+        }
+
+        @Override
+        public Object instantiateItem(View container, int position) {
+            LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            View imageViewContainer = inflater.inflate(R.layout.guide_single_view, null);
+            ImageView imageView = (ImageView) imageViewContainer.findViewById(R.id.image_view);
+
+            switch(position) {
+            case 0:
+                imageView.setImageResource(R.drawable.image1);
+                break;
+
+            case 1:
+                imageView.setImageResource(R.drawable.image2);
+                break;
+
+            case 2:
+                imageView.setImageResource(R.drawable.image3);
+                break;
+
+            case 3:
+                imageView.setImageResource(R.drawable.image4);
+                break;
+
+            case 4:
+                imageView.setImageResource(R.drawable.image5);
+                break;
+            case 5:
+            	mViewPager.setVisibility(View.GONE);
+            	isGuideClosed = true;
+            	if (installMessage.equals("setMessageProgressDialog")) {
+            		sendmsg("showProgressDialog", "");
+    	    		sendmsg("setMessageProgressDialog", "Please wait...");
+            	} else if (installMessage.equals("installFailed")){
+            		sendmsg("installFailed", "");
+            	}
+                break;
+            }
+
+            ((ViewPager) container).addView(imageViewContainer, 0);
+            return imageViewContainer;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            ((ViewPager)container).removeView((View)object);
+        }
+    }
+
+
+    class GuidePageChangeListener implements ViewPager.OnPageChangeListener {
+
+        @Override
+        public void onPageScrollStateChanged(int arg0) {
+
+        }
+
+        @Override
+        public void onPageScrolled(int arg0, float arg1, int arg2) {
+
+        }
+
+        @Override
+        public void onPageSelected(int position) {
+            // Here is where you should show change the view of page indicator
+            switch(position) {
+            case MAX_VIEWS:
+                break;
+            default:
+            }
+        }
+    }
 }

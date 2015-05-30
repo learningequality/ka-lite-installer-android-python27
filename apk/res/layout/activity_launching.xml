@@ -138,6 +138,12 @@
         
     </RelativeLayout>
     
+    <android.support.v4.view.ViewPager
+        android:id="@+id/view_pager"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:visibility="gone"/>
+    
     <org.xwalk.core.XWalkView android:id="@+id/webview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent">
