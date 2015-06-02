@@ -94,7 +94,7 @@ public class ScriptActivity extends Activity {
 	private boolean isHomePageFirstTime = true;
 	private ViewPager mViewPager;
 	private static final int MAX_VIEWS = 5;
-	private boolean isGuideClosed = false;
+	private boolean isGuideClosed = true;
 	private String installMessage = "";
 	GlobalValues gv;
 	  
@@ -302,7 +302,7 @@ public class ScriptActivity extends Activity {
 	}
 	***/
 	private void openWebViewIfAllConditionsMeet(){
-		if(isServerRunning && isFileBrowserClosed && isHeartViewClosed){
+		if(isServerRunning && isFileBrowserClosed && isHeartViewClosed && isGuideClosed){
 			wv.load("http://0.0.0.0:8008/", null);
 			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 		}
@@ -317,6 +317,14 @@ public class ScriptActivity extends Activity {
 		spinner.setVisibility(View.VISIBLE);
 		ServerStatusTextView.setText("Retry to start the server ... ");
 		runScriptService("start");
+	}
+	
+	public void startGuide(View view) {
+		mViewPager = (ViewPager) findViewById(R.id.view_pager);
+		mViewPager.setVisibility(View.VISIBLE);
+		isGuideClosed = false;
+        mViewPager.setAdapter(new GuidePagerAdapter());
+        mViewPager.setOnPageChangeListener(new GuidePageChangeListener());
 	}
 	
 	/**
@@ -691,14 +699,6 @@ public class ScriptActivity extends Activity {
                 imageView.setImageResource(R.drawable.image5);
                 break;
             case 5:
-            	mViewPager.setVisibility(View.GONE);
-            	isGuideClosed = true;
-            	if (installMessage.equals("setMessageProgressDialog")) {
-            		sendmsg("showProgressDialog", "");
-    	    		sendmsg("setMessageProgressDialog", "Please wait...");
-            	} else if (installMessage.equals("installFailed")){
-            		sendmsg("installFailed", "");
-            	}
                 break;
             }
 
@@ -729,7 +729,17 @@ public class ScriptActivity extends Activity {
         public void onPageSelected(int position) {
             // Here is where you should show change the view of page indicator
             switch(position) {
-            case MAX_VIEWS:
+            case 5:
+            	mViewPager.setVisibility(View.GONE);
+            	isGuideClosed = true;
+            	if (installMessage.equals("setMessageProgressDialog")) {
+            		sendmsg("showProgressDialog", "");
+    	    		sendmsg("setMessageProgressDialog", "Please wait...");
+            	} else if (installMessage.equals("installFailed")){
+            		sendmsg("installFailed", "");
+            	} else {
+            		openWebViewIfAllConditionsMeet();
+            	}
                 break;
             default:
             }
