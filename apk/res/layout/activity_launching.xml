@@ -38,6 +38,20 @@
                 android:visibility="gone"
                 android:onClick="clickOnHeart"
                 android:clickable="true" />
+            
+            <ImageView
+                android:id="@+id/help"
+                android:layout_alignParentRight="true"
+                android:paddingRight="-70dp"
+                android:paddingLeft="-70dp"
+                android:layout_marginRight="70dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@+id/logo"
+                android:layout_alignTop="@+id/logo"
+                android:src="@drawable/help"
+                android:onClick="startGuide"
+                android:clickable="true" />
        
         </RelativeLayout>
     
@@ -138,9 +152,16 @@
         
     </RelativeLayout>
     
+    <android.support.v4.view.ViewPager
+        android:id="@+id/view_pager"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:visibility="gone"/>
+    
     <org.xwalk.core.XWalkView android:id="@+id/webview"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+        android:layout_height="fill_parent"
+        android:visibility="gone">
     </org.xwalk.core.XWalkView>
     
     <ProgressBar android:id="@+id/webProgressBar"
