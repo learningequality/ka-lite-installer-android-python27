@@ -320,9 +320,9 @@ public class ScriptActivity extends Activity {
 	}
 	
 	public void startGuide(View view) {
+		isGuideClosed = false;
 		mViewPager = (ViewPager) findViewById(R.id.view_pager);
 		mViewPager.setVisibility(View.VISIBLE);
-		isGuideClosed = false;
         mViewPager.setAdapter(new GuidePagerAdapter());
         mViewPager.setOnPageChangeListener(new GuidePageChangeListener());
 	}
@@ -335,10 +335,9 @@ public class ScriptActivity extends Activity {
 		/*
 		 * here we pretend our webview is a desktop Chrome
 		 */
+		isHeartViewClosed = false;
 		String userAgent = "Chrome/42.0.2311.90";
 		setWebViewUserAgent(wv, userAgent);
-		
-		isHeartViewClosed = false;
 		wv.setVisibility(View.VISIBLE);
 		wv.load("https://learningequality.org/give/", null);
 	}
@@ -733,9 +732,11 @@ public class ScriptActivity extends Activity {
             	mViewPager.setVisibility(View.GONE);
             	isGuideClosed = true;
             	if (installMessage.equals("setMessageProgressDialog")) {
+            		installMessage = "";
             		sendmsg("showProgressDialog", "");
     	    		sendmsg("setMessageProgressDialog", "Please wait...");
             	} else if (installMessage.equals("installFailed")){
+            		installMessage = "";
             		sendmsg("installFailed", "");
             	} else {
             		openWebViewIfAllConditionsMeet();
