@@ -155,15 +155,17 @@ public class KaliteUtilities {
 	        	RSA = generateRSA();
 	        }
 	        			
+//	        String content_root_khan = null;
             String content_root = null;
-            String content_data = null;
+//            String content_data = null;
             
             // the location of local_settings.py
             String local_settings_destination = context.getFilesDir().getAbsolutePath() + local_settings_path;
             String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
             
             content_root = "\nCONTENT_ROOT = \"content root not specified yet\"";
-            content_data = "\nCONTENT_DATA_PATH = \"content data not specified yet\"";
+//            content_data = "\nCONTENT_DATA_PATH = \"file:///android_asset/data/\"";
+//            content_root_khan = "\nCONTENT_ROOT_KHAN = \"file:///android_asset/khan/\"";
             
             // setting info
             String gut ="CHANNEL = \"khan\"" +
@@ -173,8 +175,9 @@ public class KaliteUtilities {
 //            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
             "\nPDFJS = False" +
             database_path +
+//            content_root_khan +
             content_root +
-            content_data +
+//            content_data +
             "\nDEBUG = True" +
             "\nUSE_I18N = False" +
             "\nUSE_L10N = False" +
@@ -247,9 +250,10 @@ public class KaliteUtilities {
 	        while ((line = br.readLine()) != null) {
 	            if (line.contains("CONTENT_ROOT =")){
 	               line = "CONTENT_ROOT = \"" + newPath +"/content/\"";
-	            } else if (line.contains("CONTENT_DATA_PATH =")){
-	            	line = "CONTENT_DATA_PATH = \"" + newPath +"/data/\"";
-	            }
+	            } 
+//	            else if (line.contains("CONTENT_DATA_PATH =")){
+//	            	line = "CONTENT_DATA_PATH = \"" + newPath +"/data/\"";
+//	            }
 	            bw.write(line+"\n");
 	         }
 		} catch (Exception e) {

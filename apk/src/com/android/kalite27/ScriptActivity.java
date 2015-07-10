@@ -130,7 +130,7 @@ public class ScriptActivity extends Activity {
 		
 		// install needed ?
     	boolean installNeeded = isInstallNeeded();
-    	
+		
     	// first time running
     	if(installNeeded) {
     		// this will also call generate_local_settings after unzip library
@@ -150,9 +150,10 @@ public class ScriptActivity extends Activity {
     			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
     			runScriptService("start");
     		}else{
-    			spinner.setVisibility(View.INVISIBLE);
-    			ServerStatusTextView.setText("Content does not exist");
+//    			spinner.setVisibility(View.INVISIBLE);
+    			ServerStatusTextView.setText("Content does not exist, starting server...");
       		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+      		  	runScriptService("start");
     		}
 		}
 
@@ -398,13 +399,12 @@ public class ScriptActivity extends Activity {
 	 * @return
 	 */
 	private boolean check_directory(String path){
-		File data_file = new File(path + "/data");
 		File content_file = new File(path + "/content");
 		// if the directory doesn't contain data or content folder, alert
-        if(!data_file.exists() || !content_file.exists()){
+        if(!content_file.exists()){
         	new AlertDialog.Builder(this)
                 .setTitle("Invalid Directory")
-                .setMessage("The selected directory doesn't contain the data or content folder")
+                .setMessage("The selected directory doesn't contain the content folder")
                 .setPositiveButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) { 
                     	isFileBrowserClosed = true;
@@ -424,7 +424,6 @@ public class ScriptActivity extends Activity {
 						if (keyCode == KeyEvent.KEYCODE_BACK && 
 			                event.getAction() == KeyEvent.ACTION_UP && 
 			                !event.isCanceled()) {
-							Log.e(GlobalConstants.LOG_TAG, "elieli OnKeyListener dialog");
 			                dialog.cancel();
 			                isFileBrowserClosed = true;
 			                openWebViewIfAllConditionsMeet();
@@ -504,7 +503,7 @@ public class ScriptActivity extends Activity {
 		   @Override
 		   protected Boolean doInBackground(Void... params) {	    
 	    	Log.i(GlobalConstants.LOG_TAG, "Unpacking...");
-	    	
+
 	    	// show progress dialog
 	    	if (isGuideClosed){
 	    		sendmsg("showProgressDialog", "");
@@ -528,26 +527,28 @@ public class ScriptActivity extends Activity {
 	
 		   @Override
 		   protected void onPostExecute(Boolean installStatus) {
-			if (isGuideClosed) {
-		    	sendmsg("dismissProgressDialog", "");
-		    	
-		    	if(installStatus) {
-			    	sendmsg("installSucceed", "");
-		    	}
-		    	else {
-			    	sendmsg("installFailed", "");
-		    	}
-			} else {
-				if(installStatus) {
-			    	installMessage = "installSucceed";
-		    	}
-		    	else {
-		    		installMessage = "installFailed";
-		    	} 
-			}
-  		  	mUtilities.generate_local_settings(getApplicationContext());
-  		  	ServerStatusTextView.setText("No Content Available");
-  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+			   if (isGuideClosed) {
+			    	sendmsg("dismissProgressDialog", "");
+			    	
+			    	if(installStatus) {
+				    	sendmsg("installSucceed", "");
+			    	}
+			    	else {
+				    	sendmsg("installFailed", "");
+			    	}
+				} else {
+					if(installStatus) {
+				    	installMessage = "installSucceed";
+			    	}
+			    	else {
+			    		installMessage = "installFailed";
+			    	} 
+				}
+	  		  	mUtilities.generate_local_settings(getApplicationContext());
+	  		  	ServerStatusTextView.setText("No Content Available, starting server...");
+	  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+	  		  	spinner.setVisibility(View.VISIBLE);
+	  		  	runScriptService("start");
 		   }
 	   
 	  }
@@ -658,7 +659,7 @@ public class ScriptActivity extends Activity {
 		Log.e(GlobalConstants.LOG_TAG, "main activity onDestroy is called elieli");
 		runScriptService("stop");
 	}
-  
+  	
   	class GuidePagerAdapter extends PagerAdapter {
 
         @Override

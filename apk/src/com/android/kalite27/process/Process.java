@@ -149,8 +149,8 @@ public class Process {
         //pass python exit code to main activity via singlton GlobalValues(sharepreference)
         String kalite_command = mArguments.get(1);
         if(!kalite_command.equals("stop")){ //when "stop" command is sent, main activity could have been killed, therefore GloabalValue is gone too.
-          GlobalValues gv = GlobalValues.getInstance();
-          gv.setPythonExitCode(returnValue, kalite_command);
+	        GlobalValues gv = GlobalValues.getInstance();
+	        gv.setPythonExitCode(returnValue, kalite_command);
         }
         Log.w(GlobalConstants.LOG_TAG, "Process " + pid + " exited with result code " + returnValue +" / "+ kalite_command + ".");
         try {
@@ -195,7 +195,7 @@ public class Process {
   }
 
   public String getSdcardPackageDirectory() {
-  return null;
+	return null;
   }
   
   public String getUptime() {
