@@ -5,20 +5,20 @@
     android:layout_height="fill_parent"
     >
    <ListView android:id="@android:id/list"
-      android:layout_width="fill_parent"
+   		android:layout_width="fill_parent"
       android:layout_height="fill_parent"
       android:layout_weight="1"/>
    
    <Button android:text="OK"
-      android:id="@+id/btnChoose"
-      android:background = "@drawable/roundedbutton"
-      android:layout_alignParentBottom="true"
-      android:layout_alignParentRight="true"
-      android:layout_marginBottom="15dp"
-      android:layout_marginRight="20dp"
-      android:textStyle="bold"
-      android:textColor="#FFFFFF"
-      android:layout_width="70dp"
-      android:layout_height="70dp"/>
+   		android:id="@+id/btnChoose"
+   		android:background = "@drawable/roundedbutton"
+   		android:layout_alignParentBottom="true"
+   		android:layout_alignParentRight="true"
+   		android:layout_marginBottom="15dp"
+   		android:layout_marginRight="20dp"
+   		android:textStyle="bold"
+   		android:textColor="#FFFFFF"
+   		android:layout_width="70dp"
+   		android:layout_height="70dp"/>
 
 </RelativeLayout>
