@@ -168,8 +168,13 @@ public class KaliteUtilities {
 //            content_root_khan = "\nCONTENT_ROOT_KHAN = \"file:///android_asset/khan/\"";
             
             // setting info
-            String gut ="CHANNEL = \"khan\"" +
-            "\nDO_NOT_RELOAD_CONTENT_CACHE_AT_STARTUP = True" +
+            String gut =
+            //setting the environment variable KALITE_HOME, something like /data/data/com.android.kalite27/files/kalite
+            "import os\n"+
+            "os.environ[\"KALITE_HOME\"] = \"" + context.getFilesDir().getAbsolutePath() + "/kalite\"\n"+
+            
+            "CHANNEL = \"khan\"" +
+//            "\nDO_NOT_RELOAD_CONTENT_CACHE_AT_STARTUP = True" +
             "\nLOAD_KHAN_RESOURCES = True" +
 //            "\nLOCKDOWN = True" +   // current develop branch does not work with this setting, yet
 //            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
@@ -178,7 +183,7 @@ public class KaliteUtilities {
 //            content_root_khan +
             content_root +
 //            content_data +
-            "\nDEBUG = True" +
+            // "\nDEBUG = True" +
             "\nUSE_I18N = False" +
             "\nUSE_L10N = False" +
             "\n" + RSA;
