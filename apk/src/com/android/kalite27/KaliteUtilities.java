@@ -177,6 +177,9 @@ public class KaliteUtilities {
             "from .base import *\n" +
             //setting the environment variable KALITE_HOME, something like /data/data/com.android.kalite27/files/kalite
 //            "import os\n"+
+//            "import sys\n"+
+//            "if \"MY_SITE_PACKAGES\" in os.environ:\n" +
+//            "	sys.path.append(os.environ[\"MY_SITE_PACKAGES\"])\n" +
 //            "os.environ[\"KALITE_HOME\"] = \"" + context.getFilesDir().getAbsolutePath() + "/kalite\"\n"+
             
             "CHANNEL = \"khan\"" +

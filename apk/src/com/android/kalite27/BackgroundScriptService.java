@@ -175,9 +175,9 @@ public class BackgroundScriptService extends Service {
 	// ------------------------------------------------------------------------------------------------------
 
 		private void stopMyMain() {
-
+			String app_internal_path = this.getFilesDir().getAbsolutePath();
 			String scriptName = GlobalConstants.PYTHON_MAIN_SCRIPT_NAME;
-			scriptName = this.getFilesDir().getAbsolutePath() + "/" + scriptName;
+			scriptName = app_internal_path + "/" + scriptName;
 			File script = new File(scriptName);
 
 			// arguments
@@ -185,17 +185,19 @@ public class BackgroundScriptService extends Service {
 			args.add(scriptName);
 			args.add("stop");
 
-			File pythonBinary = new File(this.getFilesDir().getAbsolutePath() + "/python/bin/python");
+			File pythonBinary = new File(app_internal_path + "/python/bin/python");
 			// env var
 			Map<String, String> environmentVariables = null;	
 			environmentVariables = new HashMap<String, String>();
-			environmentVariables.put("PYTHONPATH", Environment.getExternalStorageDirectory().getAbsolutePath()+ "/" + this.getPackageName() + "/extras/python" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/lib-dynload" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7");		
+			environmentVariables.put("PYTHONPATH", Environment.getExternalStorageDirectory().getAbsolutePath()+ "/" + this.getPackageName() + "/extras/python" + ":" + app_internal_path + "/python/lib/python2.7/lib-dynload" + ":" + app_internal_path + "/python/lib/python2.7");		
 			environmentVariables.put("TEMP", Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + this.getPackageName() + "/extras/tmp");		
-			environmentVariables.put("PYTHONHOME", this.getFilesDir().getAbsolutePath() + "/python");		
-			environmentVariables.put("LD_LIBRARY_PATH", this.getFilesDir().getAbsolutePath() + "/python/lib" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/lib-dynload");		
+//			environmentVariables.put("PYTHONHOME", this.getFilesDir().getAbsolutePath() + "/python");		
+			environmentVariables.put("LD_LIBRARY_PATH", app_internal_path + "/python/lib" + ":" + app_internal_path + "/python/lib/python2.7/lib-dynload");		
 			//kalite environment variables:
-			environmentVariables.put("KALITE_HOME", this.getFilesDir().getAbsolutePath() + "/kalite");
+			environmentVariables.put("KALITE_HOME", app_internal_path + "/kalite");
 			environmentVariables.put("DJANGO_SETTINGS_MODULE", "kalite.project.settings.android");
+			environmentVariables.put("PYTHONHOME", app_internal_path + "/python:" + app_internal_path + "/python/lib/python2.7/site-packages:"+ app_internal_path +"/python/lib/python2.7/site-packages/");
+//			environmentVariables.put("MY_SITE_PACKAGES", this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/site-packages:"+this.getFilesDir().getAbsolutePath()+"/python/lib/python2.7/site-packages/");
 			
 			// launch script
 //			mProxy = new AndroidProxy(this, null, true);
@@ -216,9 +218,9 @@ public class BackgroundScriptService extends Service {
 	// ------------------------------------------------------------------------------------------------------
 
 	private void startMyMain(final int startId, String kalite_command) {
-
+		String app_internal_path = this.getFilesDir().getAbsolutePath();
 		String scriptName = GlobalConstants.PYTHON_MAIN_SCRIPT_NAME;
-		scriptName = this.getFilesDir().getAbsolutePath() + "/" + scriptName;
+		scriptName = app_internal_path + "/" + scriptName;
 		File script = new File(scriptName);
 		final boolean selfTerminated;
 		if(kalite_command.equals("stop")){
@@ -232,18 +234,20 @@ public class BackgroundScriptService extends Service {
 		args.add(kalite_command);
 //		args.add("--foreground");
 
-		File pythonBinary = new File(this.getFilesDir().getAbsolutePath() + "/python/bin/python");
+		File pythonBinary = new File(app_internal_path + "/python/bin/python");
 
 		// env var
 		Map<String, String> environmentVariables = null;	
 		environmentVariables = new HashMap<String, String>();
-		environmentVariables.put("PYTHONPATH", Environment.getExternalStorageDirectory().getAbsolutePath()+ "/" + this.getPackageName() + "/extras/python" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/lib-dynload" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7");		
+		environmentVariables.put("PYTHONPATH", Environment.getExternalStorageDirectory().getAbsolutePath()+ "/" + this.getPackageName() + "/extras/python" + ":" + app_internal_path + "/python/lib/python2.7/lib-dynload" + ":" + app_internal_path + "/python/lib/python2.7");		
 		environmentVariables.put("TEMP", Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + this.getPackageName() + "/extras/tmp");		
-		environmentVariables.put("PYTHONHOME", this.getFilesDir().getAbsolutePath() + "/python");		
-		environmentVariables.put("LD_LIBRARY_PATH", this.getFilesDir().getAbsolutePath() + "/python/lib" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/lib-dynload");		
+//		environmentVariables.put("PYTHONHOME", this.getFilesDir().getAbsolutePath() + "/python");		
+		environmentVariables.put("LD_LIBRARY_PATH", app_internal_path + "/python/lib" + ":" + app_internal_path + "/python/lib/python2.7/lib-dynload");		
 		//kalite environment variables:
-		environmentVariables.put("KALITE_HOME", this.getFilesDir().getAbsolutePath() + "/kalite");
+		environmentVariables.put("KALITE_HOME", app_internal_path + "/kalite");
 		environmentVariables.put("DJANGO_SETTINGS_MODULE", "kalite.project.settings.android");
+		environmentVariables.put("PYTHONHOME", app_internal_path + "/python:" + app_internal_path + "/python/lib/python2.7/site-packages:"+ app_internal_path +"/python/lib/python2.7/site-packages/");
+
 		
 		// launch script
 		mProxy = new AndroidProxy(this, null, true);
