@@ -154,11 +154,10 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:visibility="gone"/>
-    
-    <org.xwalk.core.XWalkView android:id="@+id/webview"
+
+    <WebView android:id="@+id/webview"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
-   	</org.xwalk.core.XWalkView>
+        android:layout_height="fill_parent"/>
     
     <ProgressBar android:id="@+id/webProgressBar"
         style="?android:attr/progressBarStyleHorizontal"

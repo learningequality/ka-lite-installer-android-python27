@@ -193,6 +193,9 @@ public class BackgroundScriptService extends Service {
 			environmentVariables.put("TEMP", Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + this.getPackageName() + "/extras/tmp");		
 			environmentVariables.put("PYTHONHOME", this.getFilesDir().getAbsolutePath() + "/python");		
 			environmentVariables.put("LD_LIBRARY_PATH", this.getFilesDir().getAbsolutePath() + "/python/lib" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/lib-dynload");		
+			//kalite environment variables:
+			environmentVariables.put("KALITE_HOME", this.getFilesDir().getAbsolutePath() + "/kalite");
+			environmentVariables.put("DJANGO_SETTINGS_MODULE", "kalite.project.settings.android");
 			
 			// launch script
 //			mProxy = new AndroidProxy(this, null, true);
@@ -227,7 +230,7 @@ public class BackgroundScriptService extends Service {
 		ArrayList<String> args = new ArrayList<String>();
 		args.add(scriptName);
 		args.add(kalite_command);
-		// args.add("--foreground");
+//		args.add("--foreground");
 
 		File pythonBinary = new File(this.getFilesDir().getAbsolutePath() + "/python/bin/python");
 
@@ -238,6 +241,9 @@ public class BackgroundScriptService extends Service {
 		environmentVariables.put("TEMP", Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + this.getPackageName() + "/extras/tmp");		
 		environmentVariables.put("PYTHONHOME", this.getFilesDir().getAbsolutePath() + "/python");		
 		environmentVariables.put("LD_LIBRARY_PATH", this.getFilesDir().getAbsolutePath() + "/python/lib" + ":" + this.getFilesDir().getAbsolutePath() + "/python/lib/python2.7/lib-dynload");		
+		//kalite environment variables:
+		environmentVariables.put("KALITE_HOME", this.getFilesDir().getAbsolutePath() + "/kalite");
+		environmentVariables.put("DJANGO_SETTINGS_MODULE", "kalite.project.settings.android");
 		
 		// launch script
 		mProxy = new AndroidProxy(this, null, true);

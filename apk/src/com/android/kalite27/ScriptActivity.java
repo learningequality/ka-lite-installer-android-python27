@@ -49,6 +49,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -59,13 +60,16 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 
-import org.xwalk.core.XWalkNavigationHistory;
-import org.xwalk.core.XWalkResourceClient;
-import org.xwalk.core.XWalkView;
-import org.xwalk.core.XWalkPreferences;
-import org.xwalk.core.internal.XWalkSettings;
-import org.xwalk.core.internal.XWalkViewBridge;
+//import org.xwalk.core.XWalkNavigationHistory;
+//import org.xwalk.core.XWalkResourceClient;
+//import org.xwalk.core.XWalkView;
+//import org.xwalk.core.XWalkPreferences;
+//import org.xwalk.core.internal.XWalkSettings;
+//import org.xwalk.core.internal.XWalkViewBridge;
 
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -82,7 +86,7 @@ public class ScriptActivity extends Activity {
 	private RelativeLayout startView;
 	private TextView ServerStatusTextView;
 	private TextView FileTextView;
-	private XWalkView wv;
+	private WebView wv;
 	private String contentPath;
 	private KaliteUtilities mUtilities;
 	private Button retryButton;
@@ -97,6 +101,7 @@ public class ScriptActivity extends Activity {
 	private boolean isGuideClosed = true;
 	private String installMessage = "";
 	GlobalValues gv;
+	private String start_command = "start";
 	  
 	@SuppressLint("NewApi") @Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -133,7 +138,7 @@ public class ScriptActivity extends Activity {
 		
     	// first time running
     	if(installNeeded) {
-    		// this will also call generate_local_settings after unzip library
+    		// this will also call generate_android_settings after unzip library
     		spinner.setVisibility(View.INVISIBLE);
     		mViewPager = (ViewPager) findViewById(R.id.view_pager);
     		mViewPager.setVisibility(View.VISIBLE);
@@ -148,41 +153,45 @@ public class ScriptActivity extends Activity {
     		if(contentFiles.exists()){
     			FileTextView.setText("Content Location: " + contentPath);
     			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
-    			runScriptService("start");
+    			runScriptService(start_command);
     		}else{
 //    			spinner.setVisibility(View.INVISIBLE);
     			ServerStatusTextView.setText("Content does not exist, starting server...");
       		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
-      		  	runScriptService("start");
+      		  	runScriptService(start_command);
     		}
 		}
 
-    	wv = (XWalkView)findViewById(R.id.webview);
+    	wv = (WebView)findViewById(R.id.webview);
+    	if(GlobalConstants.IS_REMOTE_DEBUGGING){
+	    	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+	    		WebView.setWebContentsDebuggingEnabled(true);
+	    	}
+    	}
     	wv.setVisibility(View.INVISIBLE);
+    	WebSettings webSettings = wv.getSettings();
+    	webSettings.setJavaScriptEnabled(true);
     	wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-		wv.setResourceClient(new XWalkResourceClient(wv){
-			@Override
-			public void onLoadStarted(XWalkView view, String url){
-				super.onLoadStarted(view, url);
+		wv.setWebViewClient(new WebViewClient(){
+			public void onPageStarted(WebView view, String url){
+				super.onPageStarted(view, url, null);
 				if(!isHeartViewClosed){
-					wv.getNavigationHistory().clear();
+					wv.clearHistory();
 				}
 			}
 			
-			@Override
-			public void onLoadFinished(XWalkView view, String url){
-				super.onLoadFinished(view, url);
+			public void onPageFinished(WebView view, String url){
+				super.onPageFinished(view, url);
 				webProgressBar.setVisibility(View.INVISIBLE);
 				if(url.equals("http://0.0.0.0:8008/") && isHomePageFirstTime){
 					isHomePageFirstTime = false;
 					startView.setVisibility(View.GONE);
 					view.setVisibility(View.VISIBLE);
-					view.getNavigationHistory().clear();
+					view.clearHistory();
 				}
 			}
 			
-			@Override
-			public void onProgressChanged(XWalkView view, int progress) {
+			public void onProgressChanged(WebView view, int progress) {
 				webProgressBar.setProgress(progress);
 				if(progress > 99){
 					webProgressBar.setProgress(0);
@@ -190,27 +199,17 @@ public class ScriptActivity extends Activity {
 			}
 			
 			@Override
-			public boolean shouldOverrideUrlLoading(XWalkView view, String url){
+			public boolean shouldOverrideUrlLoading(WebView view, String url){
 				if(!isHomePageFirstTime) {
 					webProgressBar.setVisibility(View.VISIBLE);
 				}
 				if(!isHeartViewClosed){
 					webProgressBar.setVisibility(View.VISIBLE);
-					wv.getNavigationHistory().clear();
+					wv.clearHistory();
 				}
 				return false;
 			}
 		});
-		
-//		XWalkPreferences.setValue("enable-javascript", true);
-//		XWalkPreferences.setValue(XWalkPreferences.JAVASCRIPT_CAN_OPEN_WINDOW, true);
-		XWalkPreferences.setValue(XWalkPreferences.SUPPORT_MULTIPLE_WINDOWS, false);
-		/*
-		 * !!! remember to disable REMOTE_DEBUGGING in production, it causes error message overflow
-		 */
-		if(GlobalConstants.IS_REMOTE_DEBUGGING){
-			XWalkPreferences.setValue(XWalkPreferences.REMOTE_DEBUGGING, true);
-		}
 		
 //		new PreCacheAsyncTask().execute();
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
@@ -230,7 +229,7 @@ public class ScriptActivity extends Activity {
 					if (server_status == 0) {  // 0 means the server is running
 						isServerRunning = true;
 						openWebViewIfAllConditionsMeet();
-					}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
+					}else if(server_status != 0 && kalite_command.equals(start_command) || kalite_command.equals("restart")){
 						runScriptService("status");
 					}else if(kalite_command.equals("status")){
 						ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
@@ -249,32 +248,32 @@ public class ScriptActivity extends Activity {
 	 * Stripe use it to define its behaviors.
 	 * Crosswalk 10 don't support setUserAgentString, so we use Reflection to modify the User Agent.
 	 */
-	private void setWebViewUserAgent(XWalkView webView, String userAgent){
-	    try{
-	        Method ___getBridge = XWalkView.class.getDeclaredMethod("getBridge");
-	        ___getBridge.setAccessible(true);
-	        XWalkViewBridge xWalkViewBridge = null;
-	        xWalkViewBridge = (XWalkViewBridge)___getBridge.invoke(webView);
-	        XWalkSettings xWalkSettings = xWalkViewBridge.getSettings();
-	        xWalkSettings.setUserAgentString(userAgent);
-	    }catch (NoSuchMethodException e){
-	        // Could not set user agent
-	        e.printStackTrace();
-	    }catch (IllegalAccessException e){
-	        e.printStackTrace();
-	    }catch (InvocationTargetException e){
-	    	e.printStackTrace();
-	    }
-	}
+//	private void setWebViewUserAgent(XWalkView webView, String userAgent){
+//	    try{
+//	        Method ___getBridge = XWalkView.class.getDeclaredMethod("getBridge");
+//	        ___getBridge.setAccessible(true);
+//	        XWalkViewBridge xWalkViewBridge = null;
+//	        xWalkViewBridge = (XWalkViewBridge)___getBridge.invoke(webView);
+//	        XWalkSettings xWalkSettings = xWalkViewBridge.getSettings();
+//	        xWalkSettings.setUserAgentString(userAgent);
+//	    }catch (NoSuchMethodException e){
+//	        // Could not set user agent
+//	        e.printStackTrace();
+//	    }catch (IllegalAccessException e){
+//	        e.printStackTrace();
+//	    }catch (InvocationTargetException e){
+//	    	e.printStackTrace();
+//	    }
+//	}
 	
 	@Override
 	public void onBackPressed() {
-	    if (wv.getNavigationHistory().canGoBack()) {
-	        wv.getNavigationHistory().navigate(XWalkNavigationHistory.Direction.BACKWARD, 1);
+	    if (wv.canGoBack()) {
+	        wv.goBack();
 	    } else {
 	    	if (!isHeartViewClosed) {
 	    		isHeartViewClosed = true;
-	    		wv.load("about:blank", null);
+	    		wv.loadUrl("about:blank", null);
 	    		webProgressBar.setVisibility(View.INVISIBLE);
 	    		wv.setVisibility(View.INVISIBLE);
 	    		openWebViewIfAllConditionsMeet();
@@ -304,7 +303,7 @@ public class ScriptActivity extends Activity {
 	***/
 	private void openWebViewIfAllConditionsMeet(){
 		if(isServerRunning && isFileBrowserClosed && isHeartViewClosed && isGuideClosed){
-			wv.load("http://0.0.0.0:8008/", null);
+			wv.loadUrl("http://0.0.0.0:8008/", null);
 			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 		}
 	}
@@ -317,7 +316,7 @@ public class ScriptActivity extends Activity {
 		retryButton.setVisibility(View.INVISIBLE);
 		spinner.setVisibility(View.VISIBLE);
 		ServerStatusTextView.setText("Retry to start the server ... ");
-		runScriptService("start");
+		runScriptService(start_command);
 	}
 	
 	public void startGuide(View view) {
@@ -338,9 +337,9 @@ public class ScriptActivity extends Activity {
 		 */
 		isHeartViewClosed = false;
 		String userAgent = "Chrome/42.0.2311.90";
-		setWebViewUserAgent(wv, userAgent);
+//		setWebViewUserAgent(wv, userAgent);
 		wv.setVisibility(View.VISIBLE);
-		wv.load("https://learningequality.org/give/", null);
+		wv.loadUrl("https://learningequality.org/give/", null);
 	}
 	
 	/**
@@ -370,7 +369,7 @@ public class ScriptActivity extends Activity {
 	            if(check_directory(path)){
 	            	// if the path is changed
 	            	if (contentPath != path) {
-	            		// set the local settings
+	            		// set the android settings
 	            		mUtilities.setContentPath(path, this);
 						FileTextView.setText("Content location: " + path);
 						FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
@@ -544,11 +543,11 @@ public class ScriptActivity extends Activity {
 			    		installMessage = "installFailed";
 			    	} 
 				}
-	  		  	mUtilities.generate_local_settings(getApplicationContext());
-	  		  	ServerStatusTextView.setText("No Content Available, starting server...");
-	  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+	  		  	mUtilities.generate_android_settings(getApplicationContext());
+//	  		  	ServerStatusTextView.setText("No Content Available, starting server...");
+//	  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
 	  		  	spinner.setVisibility(View.VISIBLE);
-	  		  	runScriptService("start");
+	  		  	runScriptService(start_command);
 		   }
 	   
 	  }
@@ -637,7 +636,7 @@ public class ScriptActivity extends Activity {
       super.onPause();
       if (wv != null) {
           wv.pauseTimers();
-          wv.onHide();
+          wv.onPause();
       }
   }
 
@@ -646,7 +645,7 @@ public class ScriptActivity extends Activity {
       super.onResume();
       if (wv != null) {
           wv.resumeTimers();
-          wv.onShow();
+          wv.onResume();
       }
   }
 
@@ -654,7 +653,7 @@ public class ScriptActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		if (wv != null) {
-            wv.onDestroy();
+            wv.destroy();
         }
 		Log.e(GlobalConstants.LOG_TAG, "main activity onDestroy is called elieli");
 		runScriptService("stop");

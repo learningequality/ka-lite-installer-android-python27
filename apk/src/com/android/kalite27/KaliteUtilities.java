@@ -30,7 +30,7 @@ import android.app.Activity;
 
 public class KaliteUtilities {
 	// Path is depending on the ka_lite.zip file
-	private final String local_settings_path = "/kalite/local_settings.py";
+	private final String android_settings_path = "/kalite/project/settings/android.py";
 
 	public String exitCodeTranslate(int server_status) {
 		switch (server_status) {
@@ -125,10 +125,10 @@ public class KaliteUtilities {
 	}
 	
 	/**
-	 * Overwrite the local_settings based on the file pick
+	 * Overwrite the android.py based on the file pick
 	 * @param path
 	 */
-	 void generate_local_settings(Context context){
+	 void generate_android_settings(Context context){
 		try {
 			String externalStorage = Environment.getExternalStorageDirectory().getPath();
 			String setting_folder = externalStorage + "/kalite_essential";
@@ -144,7 +144,7 @@ public class KaliteUtilities {
 					
 			// First check if there is RSA saved
 			String RSA = "";
-			File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/local_settings.py");
+			File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/android.py");
 	        if(copy_settings.exists()){
 	        	RSA = readRSA(copy_settings);
 	        } else {
@@ -157,21 +157,27 @@ public class KaliteUtilities {
 	        			
 //	        String content_root_khan = null;
             String content_root = null;
+            String static_root = null;
 //            String content_data = null;
             
-            // the location of local_settings.py
-            String local_settings_destination = context.getFilesDir().getAbsolutePath() + local_settings_path;
-            String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
+            // the location of android.py
+            String android_settings_destination = context.getFilesDir().getAbsolutePath() + android_settings_path;
+//            String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
+            String database_path = "\nDATABASES['default']['NAME'] = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
+            String assessment_items_path = "\nDATABASES['assessment_items']['NAME'] = \"" + context.getFilesDir().getAbsolutePath() + "/content/assessmentitems.sqlite" + "\"";
             
-            content_root = "\nCONTENT_ROOT = \"content root not specified yet\"";
+            content_root = "\nCONTENT_ROOT = \"" + context.getFilesDir().getAbsolutePath() + "/content/" + "\"";
 //            content_data = "\nCONTENT_DATA_PATH = \"file:///android_asset/data/\"";
 //            content_root_khan = "\nCONTENT_ROOT_KHAN = \"file:///android_asset/khan/\"";
+            static_root = "\nSTATIC_ROOT = \"" + context.getFilesDir().getAbsolutePath() + "/kalite/static/" + "\"";
+            
             
             // setting info
             String gut =
+            "from .base import *\n" +
             //setting the environment variable KALITE_HOME, something like /data/data/com.android.kalite27/files/kalite
-            "import os\n"+
-            "os.environ[\"KALITE_HOME\"] = \"" + context.getFilesDir().getAbsolutePath() + "/kalite\"\n"+
+//            "import os\n"+
+//            "os.environ[\"KALITE_HOME\"] = \"" + context.getFilesDir().getAbsolutePath() + "/kalite\"\n"+
             
             "CHANNEL = \"khan\"" +
 //            "\nDO_NOT_RELOAD_CONTENT_CACHE_AT_STARTUP = True" +
@@ -180,21 +186,23 @@ public class KaliteUtilities {
 //            "\nSESSION_IDLE_TIMEOUT = 0" + //jamie ask to add it, need to test
             "\nPDFJS = False" +
             database_path +
+            assessment_items_path +
 //            content_root_khan +
             content_root +
 //            content_data +
-            // "\nDEBUG = True" +
+            static_root +
+            "\nDEBUG = True" +
             "\nUSE_I18N = False" +
             "\nUSE_L10N = False" +
             "\n" + RSA;
             
             // delete the old settings
-            File old_local_settings = new File(local_settings_destination);
-            if(old_local_settings.exists()){
-                old_local_settings.delete();
+            File old_android_settings = new File(android_settings_destination);
+            if(old_android_settings.exists()){
+                old_android_settings.delete();
             }
             // overwrite with new settings
-            File newFile = new File(local_settings_destination);
+            File newFile = new File(android_settings_destination);
             if(!newFile.exists())
             {
                 newFile.createNewFile();
@@ -246,11 +254,11 @@ public class KaliteUtilities {
 	public void setContentPath(String newPath, Context context){
 		BufferedReader br = null;
 	    BufferedWriter bw = null;
-		String local_settings_old = context.getFilesDir().getAbsolutePath() + local_settings_path;
-		String local_settings_temp = context.getFilesDir().getAbsolutePath() + "/kalite/local_settings_temp.py";
+		String android_settings_old = context.getFilesDir().getAbsolutePath() + android_settings_path;
+		String android_settings_temp = context.getFilesDir().getAbsolutePath() + "/kalite/project/settings/android_temp.py";
 		try {
-			br = new BufferedReader(new FileReader(local_settings_old));
-	        bw = new BufferedWriter(new FileWriter(local_settings_temp));
+			br = new BufferedReader(new FileReader(android_settings_old));
+	        bw = new BufferedWriter(new FileWriter(android_settings_temp));
 	        String line;
 	        while ((line = br.readLine()) != null) {
 	            if (line.contains("CONTENT_ROOT =")){
@@ -276,19 +284,19 @@ public class KaliteUtilities {
 			} catch (IOException e) {}
 	    }
 		// Once everything is complete, delete old file..
-		File oldFile = new File(local_settings_old);
+		File oldFile = new File(android_settings_old);
 		oldFile.delete();
 
 		// And rename tmp file's name to old file name
-		File newFile = new File(local_settings_temp);
+		File newFile = new File(android_settings_temp);
 		newFile.renameTo(oldFile);
 	}
 	
 	String readContentPath(Context context) {
-		String local_settings_destination = context.getFilesDir().getAbsolutePath() + local_settings_path;
-		File internal_local_settings = new File(local_settings_destination);
+		String android_settings_destination = context.getFilesDir().getAbsolutePath() + android_settings_path;
+		File internal_android_settings = new File(android_settings_destination);
 		String path = "";
-		String setting = readSetting(internal_local_settings);
+		String setting = readSetting(internal_android_settings);
 //		if(setting.contains("not specified yet")){
 //			return "Content not specified yet";
 //		}
@@ -372,7 +380,7 @@ public class KaliteUtilities {
 			if (!folder.isDirectory()) {
 				folder.mkdirs();
 			}
-			String copy_path = setting_folder + "/local_settings.py";
+			String copy_path = setting_folder + "/android.py";
 			File copy_settings = new File(copy_path);
 
 	        copy_settings.createNewFile();
