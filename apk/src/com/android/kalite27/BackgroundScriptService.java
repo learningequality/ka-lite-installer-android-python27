@@ -230,7 +230,7 @@ public class BackgroundScriptService extends Service {
 		ArrayList<String> args = new ArrayList<String>();
 		args.add(scriptName);
 		args.add(kalite_command);
-//		args.add("--foreground");
+		// args.add("--foreground");
 
 		File pythonBinary = new File(this.getFilesDir().getAbsolutePath() + "/python/bin/python");
 

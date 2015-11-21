@@ -30,6 +30,8 @@ import com.android.kalite27.support.Utils;
 import com.googlecode.android_scripting.FileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.NoSuchMethodException;
@@ -49,7 +51,6 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -60,16 +61,22 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 
-//import org.xwalk.core.XWalkNavigationHistory;
-//import org.xwalk.core.XWalkResourceClient;
-//import org.xwalk.core.XWalkView;
-//import org.xwalk.core.XWalkPreferences;
-//import org.xwalk.core.internal.XWalkSettings;
-//import org.xwalk.core.internal.XWalkViewBridge;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
+import org.xwalk.core.XWalkNavigationHistory;
+import org.xwalk.core.XWalkResourceClient;
+import org.xwalk.core.XWalkView;
+import org.xwalk.core.XWalkPreferences;
+import org.xwalk.core.internal.XWalkCookieManager;
+import org.xwalk.core.internal.XWalkSettings;
+import org.xwalk.core.internal.XWalkViewBridge;
 
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -86,7 +93,7 @@ public class ScriptActivity extends Activity {
 	private RelativeLayout startView;
 	private TextView ServerStatusTextView;
 	private TextView FileTextView;
-	private WebView wv;
+	private XWalkView wv;
 	private String contentPath;
 	private KaliteUtilities mUtilities;
 	private Button retryButton;
@@ -101,7 +108,7 @@ public class ScriptActivity extends Activity {
 	private boolean isGuideClosed = true;
 	private String installMessage = "";
 	GlobalValues gv;
-	private String start_command = "start";
+	private XWalkCookieManager mCookieManager;
 	  
 	@SuppressLint("NewApi") @Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -138,7 +145,7 @@ public class ScriptActivity extends Activity {
 		
     	// first time running
     	if(installNeeded) {
-    		// this will also call generate_android_settings after unzip library
+    		// this will also call generate_local_settings after unzip library
     		spinner.setVisibility(View.INVISIBLE);
     		mViewPager = (ViewPager) findViewById(R.id.view_pager);
     		mViewPager.setVisibility(View.VISIBLE);
@@ -153,45 +160,46 @@ public class ScriptActivity extends Activity {
     		if(contentFiles.exists()){
     			FileTextView.setText("Content Location: " + contentPath);
     			FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
-    			runScriptService(start_command);
+    			runScriptService("start");
     		}else{
 //    			spinner.setVisibility(View.INVISIBLE);
-    			ServerStatusTextView.setText("Content does not exist, starting server...");
+    			ServerStatusTextView.setText("Please set the content folder path first.");
       		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
-      		  	runScriptService(start_command);
+//      		  	runScriptService("start");
     		}
 		}
 
-    	wv = (WebView)findViewById(R.id.webview);
-    	if(GlobalConstants.IS_REMOTE_DEBUGGING){
-	    	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-	    		WebView.setWebContentsDebuggingEnabled(true);
-	    	}
-    	}
+    	wv = (XWalkView)findViewById(R.id.webview);
     	wv.setVisibility(View.INVISIBLE);
-    	WebSettings webSettings = wv.getSettings();
-    	webSettings.setJavaScriptEnabled(true);
     	wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-		wv.setWebViewClient(new WebViewClient(){
-			public void onPageStarted(WebView view, String url){
-				super.onPageStarted(view, url, null);
+    	
+    	mCookieManager = new XWalkCookieManager();
+    	mCookieManager.setAcceptCookie(true);
+    	mCookieManager.setAcceptFileSchemeCookies(true);
+    	
+		wv.setResourceClient(new XWalkResourceClient(wv){
+			@Override
+			public void onLoadStarted(XWalkView view, String url){
+				super.onLoadStarted(view, url);
 				if(!isHeartViewClosed){
-					wv.clearHistory();
+					wv.getNavigationHistory().clear();
 				}
 			}
 			
-			public void onPageFinished(WebView view, String url){
-				super.onPageFinished(view, url);
+			@Override
+			public void onLoadFinished(XWalkView view, String url){
+				super.onLoadFinished(view, url);
 				webProgressBar.setVisibility(View.INVISIBLE);
 				if(url.equals("http://0.0.0.0:8008/") && isHomePageFirstTime){
 					isHomePageFirstTime = false;
 					startView.setVisibility(View.GONE);
 					view.setVisibility(View.VISIBLE);
-					view.clearHistory();
+					view.getNavigationHistory().clear();
 				}
 			}
 			
-			public void onProgressChanged(WebView view, int progress) {
+			@Override
+			public void onProgressChanged(XWalkView view, int progress) {
 				webProgressBar.setProgress(progress);
 				if(progress > 99){
 					webProgressBar.setProgress(0);
@@ -199,17 +207,41 @@ public class ScriptActivity extends Activity {
 			}
 			
 			@Override
-			public boolean shouldOverrideUrlLoading(WebView view, String url){
+			public boolean shouldOverrideUrlLoading(XWalkView view, String url){
 				if(!isHomePageFirstTime) {
 					webProgressBar.setVisibility(View.VISIBLE);
 				}
 				if(!isHeartViewClosed){
 					webProgressBar.setVisibility(View.VISIBLE);
-					wv.clearHistory();
+					wv.getNavigationHistory().clear();
+				}
+				if(url.startsWith("http://0.0.0.0:8008/api/control_panel/") && url.contains("format=csv")){
+//					dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+//					String cookies = mCookieManager.getCookie(url);
+//			        Request request = new Request(
+//			        		Uri.parse(url));
+//			        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+//			        	.setTitle(csv_name)
+//			        	.addRequestHeader("Cookie", cookies)
+//			        	.setMimeType("text/csv")
+//			        	.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, csv_name);
+//			        dm.enqueue(request);
+					new DownloadFile().execute(url);
+			        return true;
 				}
 				return false;
 			}
 		});
+		
+		XWalkPreferences.setValue("enable-javascript", true);
+		XWalkPreferences.setValue(XWalkPreferences.JAVASCRIPT_CAN_OPEN_WINDOW, true);
+		XWalkPreferences.setValue(XWalkPreferences.SUPPORT_MULTIPLE_WINDOWS, false);
+		/*
+		 * !!! remember to disable REMOTE_DEBUGGING in production, it causes error message overflow
+		 */
+		if(GlobalConstants.IS_REMOTE_DEBUGGING){
+			XWalkPreferences.setValue(XWalkPreferences.REMOTE_DEBUGGING, true);
+		}
 		
 //		new PreCacheAsyncTask().execute();
 		prefs = getSharedPreferences("MyPrefs", MODE_MULTI_PROCESS);
@@ -229,7 +261,7 @@ public class ScriptActivity extends Activity {
 					if (server_status == 0) {  // 0 means the server is running
 						isServerRunning = true;
 						openWebViewIfAllConditionsMeet();
-					}else if(server_status != 0 && kalite_command.equals(start_command) || kalite_command.equals("restart")){
+					}else if(server_status != 0 && kalite_command.equals("start") || kalite_command.equals("restart")){
 						runScriptService("status");
 					}else if(kalite_command.equals("status")){
 						ServerStatusTextView.setText(mUtilities.exitCodeTranslate(server_status));
@@ -248,32 +280,32 @@ public class ScriptActivity extends Activity {
 	 * Stripe use it to define its behaviors.
 	 * Crosswalk 10 don't support setUserAgentString, so we use Reflection to modify the User Agent.
 	 */
-//	private void setWebViewUserAgent(XWalkView webView, String userAgent){
-//	    try{
-//	        Method ___getBridge = XWalkView.class.getDeclaredMethod("getBridge");
-//	        ___getBridge.setAccessible(true);
-//	        XWalkViewBridge xWalkViewBridge = null;
-//	        xWalkViewBridge = (XWalkViewBridge)___getBridge.invoke(webView);
-//	        XWalkSettings xWalkSettings = xWalkViewBridge.getSettings();
-//	        xWalkSettings.setUserAgentString(userAgent);
-//	    }catch (NoSuchMethodException e){
-//	        // Could not set user agent
-//	        e.printStackTrace();
-//	    }catch (IllegalAccessException e){
-//	        e.printStackTrace();
-//	    }catch (InvocationTargetException e){
-//	    	e.printStackTrace();
-//	    }
-//	}
+	private void setWebViewUserAgent(XWalkView webView, String userAgent){
+	    try{
+	        Method ___getBridge = XWalkView.class.getDeclaredMethod("getBridge");
+	        ___getBridge.setAccessible(true);
+	        XWalkViewBridge xWalkViewBridge = null;
+	        xWalkViewBridge = (XWalkViewBridge)___getBridge.invoke(webView);
+	        XWalkSettings xWalkSettings = xWalkViewBridge.getSettings();
+	        xWalkSettings.setUserAgentString(userAgent);
+	    }catch (NoSuchMethodException e){
+	        // Could not set user agent
+	        e.printStackTrace();
+	    }catch (IllegalAccessException e){
+	        e.printStackTrace();
+	    }catch (InvocationTargetException e){
+	    	e.printStackTrace();
+	    }
+	}
 	
 	@Override
 	public void onBackPressed() {
-	    if (wv.canGoBack()) {
-	        wv.goBack();
+	    if (wv.getNavigationHistory().canGoBack()) {
+	        wv.getNavigationHistory().navigate(XWalkNavigationHistory.Direction.BACKWARD, 1);
 	    } else {
 	    	if (!isHeartViewClosed) {
 	    		isHeartViewClosed = true;
-	    		wv.loadUrl("about:blank", null);
+	    		wv.load("about:blank", null);
 	    		webProgressBar.setVisibility(View.INVISIBLE);
 	    		wv.setVisibility(View.INVISIBLE);
 	    		openWebViewIfAllConditionsMeet();
@@ -303,7 +335,7 @@ public class ScriptActivity extends Activity {
 	***/
 	private void openWebViewIfAllConditionsMeet(){
 		if(isServerRunning && isFileBrowserClosed && isHeartViewClosed && isGuideClosed){
-			wv.loadUrl("http://0.0.0.0:8008/", null);
+			wv.load("http://0.0.0.0:8008/", null);
 			prefs.unregisterOnSharedPreferenceChangeListener(prefs_listener);
 		}
 	}
@@ -316,7 +348,7 @@ public class ScriptActivity extends Activity {
 		retryButton.setVisibility(View.INVISIBLE);
 		spinner.setVisibility(View.VISIBLE);
 		ServerStatusTextView.setText("Retry to start the server ... ");
-		runScriptService(start_command);
+		runScriptService("start");
 	}
 	
 	public void startGuide(View view) {
@@ -337,9 +369,9 @@ public class ScriptActivity extends Activity {
 		 */
 		isHeartViewClosed = false;
 		String userAgent = "Chrome/42.0.2311.90";
-//		setWebViewUserAgent(wv, userAgent);
+		setWebViewUserAgent(wv, userAgent);
 		wv.setVisibility(View.VISIBLE);
-		wv.loadUrl("https://learningequality.org/give/", null);
+		wv.load("https://learningequality.org/give/", null);
 	}
 	
 	/**
@@ -369,7 +401,7 @@ public class ScriptActivity extends Activity {
 	            if(check_directory(path)){
 	            	// if the path is changed
 	            	if (contentPath != path) {
-	            		// set the android settings
+	            		// set the local settings
 	            		mUtilities.setContentPath(path, this);
 						FileTextView.setText("Content location: " + path);
 						FileTextView.setBackgroundColor(Color.parseColor("#A3CC7A"));
@@ -544,13 +576,77 @@ public class ScriptActivity extends Activity {
 			    	} 
 				}
 	  		  	mUtilities.generate_android_settings(getApplicationContext());
-//	  		  	ServerStatusTextView.setText("No Content Available, starting server...");
-//	  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
-	  		  	spinner.setVisibility(View.VISIBLE);
-	  		  	runScriptService(start_command);
+	  		  	ServerStatusTextView.setText("Please set the content folder path first.");
+	  		  	ServerStatusTextView.setTextColor(Color.parseColor("#FF9966"));
+//	  		  	spinner.setVisibility(View.VISIBLE);
+//	  		  	runScriptService("start");
 		   }
 	   
 	  }
+	  
+	  class DownloadFile extends AsyncTask<String,String,String>{
+		  private ProgressDialog progress;
+		  	
+			@Override
+			protected void onPostExecute(String result) {
+			    // TODO Auto-generated method stub
+			    super.onPostExecute(result);
+			    progress.dismiss();
+			    Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+			}
+			
+			@Override
+			protected void onPreExecute() {
+			    // TODO Auto-generated method stub
+			    super.onPreExecute();
+			    progress = new ProgressDialog(ScriptActivity.this);
+	            progress.setIndeterminate(true);
+	            progress.setMessage("Exporting...");
+	            progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+	            progress.show();
+			}
+			
+			@Override
+			protected String doInBackground(String... params) {
+				HttpClient client = new DefaultHttpClient();
+				HttpContext localContext = new BasicHttpContext();
+				String file_name = "oops";
+				try {
+					HttpGet httpGet = new HttpGet(params[0]);
+//					httpGet.setHeader("Content-Type", "text/csv");
+					httpGet.setHeader("Cookie", mCookieManager.getCookie(params[0]));
+					HttpResponse response = client.execute(httpGet, localContext);
+					final int statusCode = response.getStatusLine().getStatusCode();
+//Log.e(GlobalConstants.LOG_TAG, "DownloadFile Status: "+statusCode);
+					HttpEntity entity = response.getEntity();
+					InputStream in = entity.getContent();
+					File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+					path.mkdirs();
+					if(params.length > 1 && !params[1].isEmpty()){
+						file_name = params[1];
+					}else{
+						file_name = response.getHeaders("Content-Disposition")[0].getValue().replace("filename=","");;
+					}
+					File file = new File(path, file_name);
+					FileOutputStream fos = new FileOutputStream(file);
+
+					byte[] buffer = new byte[1024];
+					int len1 = 0;
+					while ((len1 = in.read(buffer)) > 0) {
+					        fos.write(buffer, 0, len1);
+					}
+					fos.close();
+					
+				} catch (ClientProtocolException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
+				return file_name + " is exported.";
+			}
+		}
 	
   private void runScriptService(String kalite_command) {
 	  if(GlobalConstants.IS_FOREGROUND_SERVICE) {
@@ -636,7 +732,7 @@ public class ScriptActivity extends Activity {
       super.onPause();
       if (wv != null) {
           wv.pauseTimers();
-          wv.onPause();
+          wv.onHide();
       }
   }
 
@@ -645,7 +741,7 @@ public class ScriptActivity extends Activity {
       super.onResume();
       if (wv != null) {
           wv.resumeTimers();
-          wv.onResume();
+          wv.onShow();
       }
   }
 
@@ -653,7 +749,7 @@ public class ScriptActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		if (wv != null) {
-            wv.destroy();
+            wv.onDestroy();
         }
 		Log.e(GlobalConstants.LOG_TAG, "main activity onDestroy is called elieli");
 		runScriptService("stop");
