@@ -14,7 +14,9 @@ Wiki: http://code.google.com/p/android-python27/w/list
 ----
 *Overview:* 
 
-  * To use this project in Eclipse, just go to `File->Import` and select the `apk` folder. It's recommended that you then run `Project->clean` to generate the `R.java`
+  * To use this project in Eclipse, just go to `File->Import` and select the `apk` folder. 
+
+  * Because we use webview for rendering the user interface, and the webview is not chromium based until Android 4.4, we embeded a chromium based webview runtime, Crosswalk, into this project. You will need to download crosswalk-webview-10.39.235.15-arm(https://download.01.org/crosswalk/releases/crosswalk/android/stable/10.39.235.15/) and follow this link(https://crosswalk-project.org/documentation/embedding_crosswalk.html) to embed Crosswalk. It's recommended that you then run `Project->clean` to generate the `R.java`. If your target device is Android 4.4 only, you can skip this part and modify the code in `ScriptActivity.java` to use the default webview instead.
 
   * Becasue Ka_Lite is a pure Python project, we can zip the whole Ka-Lite project (https://github.com/learningequality/ka-lite) into the `ka_lite.zip` file under `res/raw` folder. This repo already contains the lastest Ka_Lite 0.16 zip file uder the `raw` folder. Ka_Lite 0.16 is still in development, which offers huge performance improvement, but also has some known issues, such as cannot downloading videos right now. We will update the zip file again as soon as Ka_Lite 0.16 merged into master. This repo only serves as a demo to show the posibility of running Ka_Lite on Android.
 
@@ -48,5 +50,7 @@ Based on:
 - https://code.google.com/p/python-for-android/
 
 - https://code.google.com/p/android-scripting/
+
+- https://crosswalk-project.org/
 
 - https://seattle.cs.washington.edu/browser/seattle/trunk/dist/android/SeattleOnAndroid
