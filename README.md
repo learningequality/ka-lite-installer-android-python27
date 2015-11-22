@@ -14,9 +14,9 @@ Wiki: http://code.google.com/p/android-python27/w/list
 ----
 *Overview:* 
 
-  * To use this project in Eclipse, just go to `File->Import` and select the apk template folder. It's recommended that you then run `Project->clean` to generate `R.java`
+  * To use this project in Eclipse, just go to `File->Import` and select the `apk` folder. It's recommended that you then run `Project->clean` to generate the `R.java`
 
-  * Zip the Ka-lite project (https://github.com/learningequality/ka-lite) into the `ka-lite.zip` file under `res/raw`.
+  * Becasue Ka_Lite is a pure Python project, we can zip the whole Ka-Lite project (https://github.com/learningequality/ka-lite) into the `ka_lite.zip` file under `res/raw` folder. This repo already contains the lastest Ka_Lite 0.16 zip file uder the `raw` folder. Ka_Lite 0.16 is still in development, which offers huge performance improvement, but also has some known issues, such as cannot downloading videos right now. We will update the zip file again as soon as Ka_Lite 0.16 merged into master. This repo only serves as a demo to show the posibility of running Ka_Lite on Android.
 
   * The Python interpreter, including all binaries and modules, should be zipped into an archive and also placed inside the `res/raw` directory. The template already has a zip archive containing the Python interpreter in this directory, so you don't need to change this if your APK runs fine. You can add modules that are needed for your scripts or remove them just by editing the files in this zip archive, or you can use your own Python build by replacing this zip archive with one containing your Python build (see the last bullet point below in this section about naming).
 
@@ -28,7 +28,7 @@ Wiki: http://code.google.com/p/android-python27/w/list
 
   * Currently the `apk` project template above contains Python version 2.7.2 already built and included inside the `apk/res/raw` directory, so there's no need to build Python yourself. 
 
-  * If you wish to build Python 2.7.2 however, you'll find the source code in `python-build` (see README). This will build Python and create the `python_27.zip` and `python_extras_27.zip` archives to replace the ones located inside the `apk/res/raw` directory.
+  * If you wish to build other Python version however, you'll find the source code in `python-build` (see README). This will build Python and create the `python_27.zip` and `python_extras_27.zip` archives to replace the ones located inside the `apk/res/raw` directory.
 
 ----
 
