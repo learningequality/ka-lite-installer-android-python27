@@ -5,21 +5,27 @@ import com.android.kalite27.config.GlobalConstants;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Environment;
+import android.text.format.Time;
 import android.util.Base64;
 import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -31,6 +37,7 @@ import android.app.Activity;
 public class KaliteUtilities {
 	// Path is depending on the ka_lite.zip file
 	private final String android_settings_path = "/kalite/project/settings/android.py";
+	public static final String MIME_TYPE_PDF = "application/pdf";
 
 	public String exitCodeTranslate(int server_status) {
 		switch (server_status) {
@@ -125,26 +132,35 @@ public class KaliteUtilities {
 	}
 	
 	/**
-	 * Overwrite the android.py based on the file pick
+	 * Overwrite the local_settings based on the file pick
 	 * @param path
 	 */
 	 void generate_android_settings(Context context){
 		try {
 			String externalStorage = Environment.getExternalStorageDirectory().getPath();
+			String projectLocation = context.getFilesDir().getAbsolutePath();
+			
 			String setting_folder = externalStorage + "/kalite_essential";
 			File folder = new File(setting_folder);
 			if(!folder.isDirectory()){
 				folder.mkdirs();
 			}
-			String dataSqlite = externalStorage + "/kalite_essential/data.sqlite";
-			File sqlite = new File(dataSqlite);
-			if(!sqlite.exists()){
-				sqlite.createNewFile();
+			String essential_datasqlite_path = externalStorage + "/kalite_essential/data.sqlite";
+			File essential_datasqlite = new File(essential_datasqlite_path);
+			if(!essential_datasqlite.exists()){
+				String originalSqlitePath = projectLocation + "/kalite/database/data.sqlite";
+				File originalSqlite = new File(originalSqlitePath);
+				String inputPath = projectLocation + "/kalite/database/";
+				String inputFile = "data.sqlite";
+				String outputPath = externalStorage + "/kalite_essential/";
+				if(originalSqlite.exists()){
+					copyFile(inputPath, inputFile, outputPath);
+				}
 			}
 					
 			// First check if there is RSA saved
 			String RSA = "";
-			File copy_settings = new File(Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/android.py");
+			File copy_settings = new File(externalStorage + "/kalite_essential/android.py");
 	        if(copy_settings.exists()){
 	        	RSA = readRSA(copy_settings);
 	        } else {
@@ -157,25 +173,24 @@ public class KaliteUtilities {
 	        			
 //	        String content_root_khan = null;
             String content_root = null;
+            String content_data = null;
             String static_root = null;
-//            String content_data = null;
             
-            // the location of android.py
-            String android_settings_destination = context.getFilesDir().getAbsolutePath() + android_settings_path;
-//            String database_path = "\nDATABASE_PATH = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
-            String database_path = "\nDATABASES['default']['NAME'] = \"" + Environment.getExternalStorageDirectory().getPath() + "/kalite_essential/data.sqlite\"";
-            String assessment_items_path = "\nDATABASES['assessment_items']['NAME'] = \"" + context.getFilesDir().getAbsolutePath() + "/content/assessmentitems.sqlite" + "\"";
+            // the location of local_settings.py
+            String android_settings_destination = projectLocation + android_settings_path;
+            String database_path = "\nDATABASES['default']['NAME'] = \"" + externalStorage + "/kalite_essential/data.sqlite\"";
+            String assessment_items_path = "\nDATABASES['assessment_items']['NAME'] = \"no assessment yet\"";
             
-            content_root = "\nCONTENT_ROOT = \"" + context.getFilesDir().getAbsolutePath() + "/content/" + "\"";
-//            content_data = "\nCONTENT_DATA_PATH = \"file:///android_asset/data/\"";
+            content_root = "\nCONTENT_ROOT = \"content root not specified yet\"";
+            content_data = "\nCONTENT_DATA_PATH = \"content data not specified yet\"";
+            static_root = "\nSTATIC_ROOT = \"" + projectLocation + "/kalite/static/" + "\"";
+
 //            content_root_khan = "\nCONTENT_ROOT_KHAN = \"file:///android_asset/khan/\"";
-            static_root = "\nSTATIC_ROOT = \"" + context.getFilesDir().getAbsolutePath() + "/kalite/static/" + "\"";
-            
             
             // setting info
             String gut =
-            "from .base import *\n" +
             //setting the environment variable KALITE_HOME, something like /data/data/com.android.kalite27/files/kalite
+            "from .base import *\n" +
 //            "import os\n"+
 //            "os.environ[\"KALITE_HOME\"] = \"" + context.getFilesDir().getAbsolutePath() + "/kalite\"\n"+
             
@@ -189,9 +204,10 @@ public class KaliteUtilities {
             assessment_items_path +
 //            content_root_khan +
             content_root +
-//            content_data +
+            content_data +
             static_root +
-            "\nDEBUG = True" +
+            "\nIS_SOURCE=False" +
+            "\nDEBUG = False" +
             "\nUSE_I18N = False" +
             "\nUSE_L10N = False" +
             "\n" + RSA;
@@ -199,7 +215,7 @@ public class KaliteUtilities {
             // delete the old settings
             File old_android_settings = new File(android_settings_destination);
             if(old_android_settings.exists()){
-                old_android_settings.delete();
+            	old_android_settings.delete();
             }
             // overwrite with new settings
             File newFile = new File(android_settings_destination);
@@ -256,6 +272,7 @@ public class KaliteUtilities {
 	    BufferedWriter bw = null;
 		String android_settings_old = context.getFilesDir().getAbsolutePath() + android_settings_path;
 		String android_settings_temp = context.getFilesDir().getAbsolutePath() + "/kalite/project/settings/android_temp.py";
+		String assessment_items_path = "DATABASES['assessment_items']['NAME'] = \"" + newPath + "/content/assessmentitems.sqlite" + "\"";
 		try {
 			br = new BufferedReader(new FileReader(android_settings_old));
 	        bw = new BufferedWriter(new FileWriter(android_settings_temp));
@@ -264,9 +281,12 @@ public class KaliteUtilities {
 	            if (line.contains("CONTENT_ROOT =")){
 	               line = "CONTENT_ROOT = \"" + newPath +"/content/\"";
 	            } 
-//	            else if (line.contains("CONTENT_DATA_PATH =")){
-//	            	line = "CONTENT_DATA_PATH = \"" + newPath +"/data/\"";
-//	            }
+	            else if (line.contains("CONTENT_DATA_PATH =")){
+	            	line = "CONTENT_DATA_PATH = \"" + newPath +"/data/\"";
+	            }
+	            else if (line.contains("DATABASES['assessment_items']['NAME'] =")){
+	            	line = assessment_items_path;
+	            }
 	            bw.write(line+"\n");
 	         }
 		} catch (Exception e) {
@@ -399,4 +419,58 @@ public class KaliteUtilities {
 			System.out.println("Failed to create a local copy");
 		}
 	}
+	
+	private void copyFile(String inputPath, String inputFile, String outputPath) {
+	    InputStream in = null;
+	    OutputStream out = null;
+	    try {
+	        //create output directory if it doesn't exist
+	        File dir = new File (outputPath); 
+	        if (!dir.exists()){
+	            dir.mkdirs();
+	        }
+
+	        in = new FileInputStream(inputPath + inputFile);        
+	        out = new FileOutputStream(outputPath + inputFile);
+
+	        byte[] buffer = new byte[1024];
+	        int read;
+	        while ((read = in.read(buffer)) != -1) {
+	            out.write(buffer, 0, read);
+	        }
+	        in.close();
+	        in = null;
+	        // write the output file (You have now copied the file)
+	        out.flush();
+	        out.close();
+	        out = null;        
+	    } catch (FileNotFoundException fnfe1) {
+//	        Log.e(GlobalConstants.LOG_TAG, "DDDDDD" + fnfe1.getMessage());
+	    } catch (Exception e) {
+//	        Log.e(GlobalConstants.LOG_TAG, "DDDDDD" + e.getMessage());
+	    }
+	}
+	
+	public static boolean canDisplayPdf(Context context) {
+	    PackageManager packageManager = context.getPackageManager();
+	    Intent testIntent = new Intent(Intent.ACTION_VIEW);
+	    testIntent.setType(MIME_TYPE_PDF);
+	    if (packageManager.queryIntentActivities(testIntent, PackageManager.MATCH_DEFAULT_ONLY).size() > 0) {
+	        return true;
+	    } else {
+	        return false;
+	    }
+	}
+
+    /**
+     * Get current time in human-readable form without spaces and special characters.
+     * The returned value may be used to compose a file name.
+     * @return current time as a string.
+     */
+    public static String getTimeStamp() {
+        Time now = new Time();
+        now.setToNow();
+        String sTime = now.format("%Y%m%d_%H%M%S");
+        return sTime;
+    }
 }
