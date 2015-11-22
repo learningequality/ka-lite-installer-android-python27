@@ -31,6 +31,11 @@ Wiki: http://code.google.com/p/android-python27/w/list
   * If you wish to build other Python version however, you'll find the source code in `python-build` (see README). This will build Python and create the `python_27.zip` and `python_extras_27.zip` archives to replace the ones located inside the `apk/res/raw` directory.
 
 ----
+*How to run the app:* 
+
+  * Once the APK is successfully genereated, it will take about 5 mins to install on your android device. After installation, it will ask you to locate the content folder, which you can extract from the Ka-Lite develop repo(https://github.com/learningequality/ka-lite/tree/develop). Just select the `content` and `data` folders from the root directory and put them into a folder and name it whatever you wish. Put this folder into your Android device or SD card so that you can select it from the app. If the app does not see the `content` and `data` folders, it will refuse to start the server.
+
+----
 
 Based on:
 
