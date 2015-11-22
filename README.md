@@ -32,6 +32,8 @@ Wiki: http://code.google.com/p/android-python27/w/list
 
 ----
 *How to run the app:* 
+	
+  * This APK only works for Android 4.1 to 4.4. Due to the hard requirement of PIE(Position Independent Execution) on Lollipop, the Python build for this repo cannot be run on Android 5.0 and above. We have figured out a way to run python on Lollipop without root privilege and will publish it after Ka-Lite 0.16 is released.
 
   * Once the APK is successfully genereated, it will take about 5 mins to install on your android device. After installation, it will ask you to locate the content folder, which you can extract from the Ka-Lite develop repo(https://github.com/learningequality/ka-lite/tree/develop). Just select the `content` and `data` folders from the root directory and put them into a folder and name it whatever you wish. Put this folder into your Android device or SD card so that you can select it from the app. If the app does not see the `content` and `data` folders, it will refuse to start the server.
 
